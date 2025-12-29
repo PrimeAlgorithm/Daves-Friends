@@ -31,6 +31,8 @@ Maybe you want to use an API service to provide random memes or maybe you don't 
 
 We recommend [creating a new branch](https://docs.github.com/en/desktop/contributing-and-collaborating-using-github-desktop/making-changes-in-a-branch/managing-branches#creating-a-branch) anytime you tinker so you don't have to worry about making mistakes on your main branch. Once your new branch is in a good state, you can [merge your changes](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/incorporating-changes-from-a-pull-request/about-pull-request-merges) to your main branch using a pull request. :rocket:
 
+Maybe you'd like to customize what happens when someone uses the /meme command?
+
 ## How to deploy your bot
 
 <img src="https://octodex.github.com/images/jetpacktocat.png" alt="image of jetpacktocat" width="200"/>
@@ -48,7 +50,7 @@ After creating an application you should see the application under `My applicati
 
 ### Step 3: Configure your bot user
 
-Select the Bot settings to edit the details. First, click on reset token to generate a new token that you will use in your `.env` file. Copy the generated token and set the `TOKEN` variable in your `.env` file with your newly generated token.
+Select the Bot settings to edit the details. First, click on reset token to generate a new token that you will use in your `.env` file. Copy the generated token and set the `TOKEN` variable in your `.env` file with your newly generated token and the Client ID from the OAuth2 menu (in .env, CLIENT_ID=...).
 
 Select the public bot option if you want your bot to be publically available.
 Select all the Privileged Gateway Intents like PRESENCE INTENT, SERVER MEMBERS INTENT, MESSAGE CONTENT INTENT if your bot needs those intents.(Note: For this application you'll need all of these intents.)
@@ -77,3 +79,4 @@ You can now run the code in the repository using the command line by typing the 
 
 ## Remember: Keep your repository private if you have a .env file in it! Keys and tokens are passwords!
 ## Remember: If you make changes in codespaces, commit and push when done!
+
