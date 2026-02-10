@@ -1,6 +1,17 @@
 import unittest
 
-from deck import *
+from deck import (
+    Color,
+    Deck,
+    DrawFourWild,
+    DrawTwo,
+    Number,
+    Reverse,
+    Skip,
+    Wild,
+    can_play_card,
+)
+
 
 class TestValidCards(unittest.TestCase):
     def test_generation(self):
@@ -33,15 +44,16 @@ class TestValidCards(unittest.TestCase):
             for card in deck.cards:
                 if card.color == Color.BLUE:
                     self.assertTrue(can_play_card(card, kind))
-                elif type(card) == type(kind):
+                elif type(card) is type(kind):
                     self.assertTrue(can_play_card(card, kind))
                 else:
                     self.assertFalse(can_play_card(card, kind))
-                                    
+
     def test_number_cards(self):
         self.assertTrue(can_play_card(Number(Color.BLUE, 10), Number(Color.RED, 10)))
         self.assertTrue(can_play_card(Number(Color.BLUE, 10), Number(Color.BLUE, 5)))
         self.assertFalse(can_play_card(Number(Color.BLUE, 10), Number(Color.RED, 5)))
-    
-if __name__ == '__main__':
+
+
+if __name__ == "__main__":
     unittest.main()
