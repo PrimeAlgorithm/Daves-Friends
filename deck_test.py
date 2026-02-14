@@ -54,6 +54,9 @@ class TestValidCards(unittest.TestCase):
         self.assertTrue(can_play_card(Number(Color.BLUE, 10), Number(Color.BLUE, 5)))
         self.assertFalse(can_play_card(Number(Color.BLUE, 10), Number(Color.RED, 5)))
 
+    def test_play_on_wilds(self):
+        self.assertTrue(can_play_card(Wild(Color.BLUE), Number(Color.BLUE, 10)))
+        self.assertFalse(can_play_card(Wild(Color.BLUE), Number(Color.RED, 10)))
 
 if __name__ == "__main__":
     unittest.main()
