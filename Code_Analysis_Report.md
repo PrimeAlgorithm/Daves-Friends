@@ -54,3 +54,23 @@ What I analyzed:
    - Impact: Easy to introduce bugs related to turns and effects.
    - Suggested Fix: Split into various per-card handlers and create tests for each of those effects.
 ---
+
+
+
+### Khalid – Test Coverage Analysis
+
+What I analyzed:
+- I ran an automated test coverage analysis using `pytest-cov` on the deck module.
+- I reviewed the coverage report to identify any untested lines of code.
+- The main file I focused on was `deck.py`.
+
+1. Issue: One line in the deck module is not covered by automated tests.
+   - Location: `deck.py` (line 88).
+   - Problem: The coverage report shows 98% coverage, leaving one line untested.
+   - Impact: This uncovered line could result in a small edge-case bug during gameplay if it behaves unexpectedly.
+   - Suggested Fix: Add an additional unit test that specifically triggers and verifies this remaining line of code.
+
+What I added:
+- Installed `pytest` and `pytest-cov`.
+- Generated a coverage report showing 98% coverage for `deck.py`.
+- Verified that all 5 existing tests pass successfully.
