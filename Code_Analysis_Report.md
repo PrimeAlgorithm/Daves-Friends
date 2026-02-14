@@ -155,3 +155,39 @@ What I added (if applicable):
 - I updated the faulty code
 - Added tests to prevent this from being a problem again
 ---
+
+
+## Ebrima Ceesay – Smoke Test / CI Validation  
+
+### What I analyzed:
+
+- Core module imports across the project  
+- Deck functionality (creation, shuffle, draw behavior)  
+- CI behavior when imports or setup fail  
+
+I reviewed the core modules (`deck.py`, `uno.py`, `models/game_state.py`, and `controllers/lobby.py`) to ensure they load correctly and do not crash on import. I also evaluated whether we had a lightweight validation test to catch structural or environment failures early in CI.
+
+---
+
+### Issues Found:
+
+**Issue: No smoke test for core imports**  
+**Location:** Entire project  
+**Problem:** Import errors would not be detected until runtime.  
+**Impact:** The bot could crash in production if a module fails to load.  
+**Suggested Fix:** Add a smoke test that verifies all core modules import without crashing.
+
+**Issue: No minimal Deck validation**  
+**Location:** deck.py  
+**Problem:** There was no simple test confirming Deck can instantiate and perform basic actions.  
+**Impact:** Broken deck logic could go unnoticed.  
+**Suggested Fix:** Add a smoke test that creates a Deck, shuffles it, and draws a card.
+
+---
+
+### What I added:
+
+- Created `tests/test_smoke.py`
+- Verified core modules import successfully
+- Verified Deck can instantiate, shuffle, and draw
+- Confirmed all tests pass
