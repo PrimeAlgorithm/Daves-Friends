@@ -8,19 +8,12 @@ from discord.ext import commands
 
 from models.game_state import GameState, GameError, Phase
 from repos.lobby_repo import LobbyRepository
+from services.game_service import GameService
 from services.lobby_service import LobbyService
+from utils.utils import require_channel_id
+from views.game_views import GameViews
 from views.lobby_views import LobbyViews
-
-
-def mention(user_id: int) -> str:
-    return f"<@{user_id}>"
-
-
-def require_channel_id(interaction: discord.Interaction) -> int:
-    cid = interaction.channel_id
-    if cid is None:
-        raise RuntimeError("This command must be used in a server channel (not DMs).")
-    return cid
+from views.renderer import Renderer
 
 
 def format_card(card: Card | None) -> str:
@@ -43,10 +36,22 @@ def format_card(card: Card | None) -> str:
 
 class UnoCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
+        # Bot
         self.bot = bot
+
+        # Views
         self.lobby_views = LobbyViews()
+        self.game_views = GameViews()
+
+        # Repos
         self.lobby_repo = LobbyRepository()
+
+        # Services
         self.lobby_service = LobbyService(self.lobby_repo)
+        self.game_service = GameService()
+
+        # Misc
+        self._renderer = Renderer(self.lobby_views, self.game_views, self.lobby_service, self.game_service)
 
     @app_commands.command(name="create", description="Create a lobby in this channel.")
     async def create(self, interaction: discord.Interaction) -> None:
@@ -62,75 +67,9 @@ class UnoCog(commands.Cog):
 
             return
 
-        view = discord.ui.View(timeout=None)
+        embeds, view = await self._renderer.render(lobby)
+        await interaction.response.send_message(embeds=embeds, view=view)
 
-        join_btn = discord.ui.Button(label="🌟 Join", style=discord.ButtonStyle.blurple)
-        leave_btn = discord.ui.Button(label="🚫 Leave", style=discord.ButtonStyle.gray)
-        start_btn = discord.ui.Button(label="🚀 Start Game", style=discord.ButtonStyle.success)
-        cancel_btn = discord.ui.Button(label="🚨 Disband Game", style=discord.ButtonStyle.danger)
-
-        join_btn.callback = self.join
-        start_btn.callback = self.start
-        leave_btn.callback = self.leave
-        cancel_btn.callback = self.disband
-        view.add_item(join_btn)
-        view.add_item(leave_btn)
-        view.add_item(start_btn)
-        view.add_item(cancel_btn)
-
-        embed = self.lobby_views.lobby_embed(lobby)
-        await interaction.response.send_message(embeds=[embed], view=view)
-
-    async def join(self, interaction: discord.Interaction) -> None:
-        cid = require_channel_id(interaction)
-
-        try:
-            self.lobby_service.join_lobby(cid, interaction.user)
-        except GameError as e:
-            embed = self.lobby_views.error_embed("Game Join" if e.title == "" else e.title, str(e))
-            await interaction.response.send_message(
-                embeds=[embed],
-                ephemeral=e.private,
-            )
-            return
-
-        update_embed = self.lobby_views.update_embed("User Joined", f"{mention(interaction.user.id)} joined the lobby.")
-        await interaction.response.send_message(
-            embeds=[update_embed],
-        )
-
-    async def leave(self, interaction: discord.Interaction) -> None:
-        cid = require_channel_id(interaction)
-
-        try:
-            self.lobby_service.leave_lobby(cid, interaction.user)
-        except GameError as e:
-            embed = self.lobby_views.error_embed("Leave" if e.title == "" else e.title, str(e), True)
-            await interaction.response.send_message(
-                embeds=[embed],
-                ephemeral=e.private,
-            )
-            return
-
-        leave_embed = self.lobby_views.update_embed(f"User Left", f"{mention(interaction.user.id)} left the lobby.")
-        await interaction.response.send_message(embeds=[leave_embed])
-
-    async def disband(self, interaction: discord.Interaction) -> None:
-        cid = require_channel_id(interaction)
-
-        try:
-            self.lobby_service.disband_lobby(cid, interaction.user)
-        except GameError as e:
-            embed = self.lobby_views.error_embed("Must Be Host" if e.title == "" else e.title, str(e))
-            await interaction.response.send_message(embeds=[embed], ephemeral=e.private)
-            return
-
-        embed = self.lobby_views.update_embed("Game Disbanded",
-                                              "The host disbanded the game, so the lobby was deleted.")
-        await interaction.response.send_message(embeds=[embed])
-
-    async def start(selfself, interaction: discord.Interaction) -> None:
-        await interaction.response.send_message("this command is a work in progress")
 
 async def setup(bot: commands.Bot) -> None:
     await bot.add_cog(UnoCog(bot))
