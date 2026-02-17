@@ -68,9 +68,3 @@ class LobbyService:
             raise GameError("In order to disband a game, you must be the host.", private=True)
 
         self._lobby_repo.delete(channel_id)
-
-    def get_lobby(self, channel_id: int) -> Lobby:
-        if not self._lobby_repo.exists(channel_id):
-            raise GameError("Lobby does not exist!")
-
-        return self._lobby_repo.get(channel_id)
