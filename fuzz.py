@@ -3,8 +3,8 @@
 import atheris
 
 with atheris.instrument_imports():
-  import deck
-  from deck import Color
+  from models import deck
+  from models.deck import Color
   import sys
 
 def create_random_card(fdp):

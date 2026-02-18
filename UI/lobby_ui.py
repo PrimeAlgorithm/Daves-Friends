@@ -53,7 +53,20 @@ class LobbyUI(Interactions):
 
     @discord.ui.button(label="🚀 Start Game", style=discord.ButtonStyle.success)
     async def start(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
-        await interaction.response.send_message("this command is a work in progress")
+        cid = require_channel_id(interaction)
+
+        try:
+            lobby = self.lobby_service.get_lobby(cid)
+            self.lobby_service.start_lobby(cid)
+        except GameError as e:
+            embed = self.lobby_views.error_embed("Start" if e.title == "" else e.title, str(e), True)
+            await interaction.response.send_message(
+                embeds=[embed],
+                ephemeral=e.private,
+            )
+            return
+
+        await self._renderer.update_from_interaction(interaction, lobby)
 
     @discord.ui.button(label="🚨 Disband Game", style=discord.ButtonStyle.danger)
     async def disband(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:

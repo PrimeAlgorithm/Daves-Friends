@@ -1,16 +1,17 @@
 from __future__ import annotations
 
-from deck import Card, Number, Skip, Reverse, DrawTwo, Wild, DrawFourWild
+from models.deck import Card, Number, Skip, Reverse, DrawTwo, Wild, DrawFourWild
 
 import discord
 from discord import app_commands
 from discord.ext import commands
 
-from models.game_state import GameState, GameError, Phase
+from models.game_state import GameError
 from repos.lobby_repo import LobbyRepository
 from services.game_service import GameService
 from services.lobby_service import LobbyService
 from utils.utils import require_channel_id
+from views.end_views import EndViews
 from views.game_views import GameViews
 from views.lobby_views import LobbyViews
 from views.renderer import Renderer
@@ -42,6 +43,7 @@ class UnoCog(commands.Cog):
         # Views
         self.lobby_views = LobbyViews()
         self.game_views = GameViews()
+        self.end_views = EndViews()
 
         # Repos
         self.lobby_repo = LobbyRepository()
@@ -51,7 +53,7 @@ class UnoCog(commands.Cog):
         self.game_service = GameService()
 
         # Misc
-        self._renderer = Renderer(self.lobby_views, self.game_views, self.lobby_service, self.game_service)
+        self._renderer = Renderer(self.lobby_views, self.game_views, self.end_views, self.lobby_service, self.game_service)
 
     @app_commands.command(name="create", description="Create a lobby in this channel.")
     async def create(self, interaction: discord.Interaction) -> None:

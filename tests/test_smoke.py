@@ -19,7 +19,7 @@ def test_smoke_deck_can_build_and_draw():
     """
     Smoke test: deck can be created and can draw at least one card.
     """
-    import deck
+    from models import deck
 
     if hasattr(deck, "Deck"):
         d = deck.Deck()

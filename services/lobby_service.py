@@ -18,6 +18,12 @@ class LobbyService:
 
         return self._lobby_repo.get(channel_id)
 
+    def start_lobby(self, channel_id: int) -> Lobby:
+        lobby = self._lobby_repo.get(channel_id)
+        lobby.game.start_game()
+        
+        return self._lobby_repo.get(channel_id)
+
     def join_lobby(self, channel_id: int, user: User) -> Lobby:
         if not self._lobby_repo.exists(channel_id):
             raise GameError("There is no lobby in this channel. Run `/create` to make one.", private=True,

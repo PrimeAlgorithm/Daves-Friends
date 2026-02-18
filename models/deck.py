@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from enum import Enum, auto
 from random import shuffle
 
-
 class Color(Enum):
     RED = auto()
     YELLOW = auto()
@@ -72,6 +71,25 @@ class Reverse:
 
 Card = Number | Wild | DrawFourWild | Reverse | Skip | DrawTwo
 
+COLOR_EMOJIS = {
+    Color.RED: "🟥",
+    Color.YELLOW: "🟨",
+    Color.BLUE: "🟦",
+    Color.GREEN: "🟩",
+}
+
+NUMBER_EMOJIS = {
+    0: "0️⃣",
+    1: "1️⃣",
+    2: "2️⃣",
+    3: "3️⃣",
+    4: "4️⃣",
+    5: "5️⃣",
+    6: "6️⃣",
+    7: "7️⃣",
+    8: "8️⃣",
+    9: "9️⃣",
+}
 
 def can_play_card(top: Card, playing: Card) -> bool:
     if playing == top or (type(top) is type(playing) and type(playing) is not Number):

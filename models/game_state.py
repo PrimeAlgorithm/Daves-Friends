@@ -3,7 +3,7 @@ from typing import Any
 from enum import Enum, auto
 
 import random
-from deck import Card, Color, Deck, Wild, DrawFourWild, can_play_card, Skip, Reverse, DrawTwo, Number
+from models.deck import Card, Color, Deck, Wild, DrawFourWild, can_play_card, Skip, Reverse, DrawTwo, Number
 
 
 class Phase(Enum):
@@ -125,9 +125,9 @@ class GameState:
 
     def start_game(self) -> None:
         if self.phase() != Phase.LOBBY:
-            raise GameError("Game already started.")
+            raise GameError("Game already started.", private=True)
         if len(self.state["players"]) < 2:
-            raise GameError("Need at least 2 players to start.")
+            raise GameError("Need at least 2 players to start.", private=True)
 
         deck = Deck()
         deck.add_default_cards()

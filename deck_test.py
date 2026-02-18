@@ -1,6 +1,6 @@
 import unittest
 
-from deck import (
+from models.deck import (
     Color,
     Deck,
     DrawFourWild,
