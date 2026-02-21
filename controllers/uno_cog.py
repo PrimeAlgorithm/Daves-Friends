@@ -6,6 +6,8 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+import asyncio
+
 from models.game_state import GameError
 from repos.lobby_repo import LobbyRepository
 from services.game_service import GameService
@@ -72,6 +74,36 @@ class UnoCog(commands.Cog):
         embeds, view = await self._renderer.render(lobby)
         await interaction.response.send_message(embeds=embeds, view=view)
 
+    async def _run_afk_timer(self, channel_id: int, player_id: int, start_turn_count: int):
+        await asyncio.sleep(60)
+
+        try:
+            lobby = self.lobby_service.get_lobby(channel_id)
+            game = lobby.game
+        except Exception:
+            return
+        
+        if game.phase().name != "PLAYING":
+            return
+        
+        if game.current_player() == player_id and game.state["turn_count"] == start_turn_count:
+            try:
+                game.draw_and_pass(player_id)
+
+                channel = self.bot.get_channel(channel_id)
+                if channel:
+                    await channel.send(f" <@{player_id}> was AFK. They drew a card and was skipped.")
+
+                    embeds, view = await self._renderer.render(lobby)
+                    await channel.send(embeds=embeds, view=view)
+
+                    asyncio.create_task(self._run_afk_timer(
+                        channel_id,
+                        game.current_player(),
+                        game.state["turn_count"]
+                    ))
+            except Exception as e:
+                print(f"AFK Timer Error: {e}")
 
 async def setup(bot: commands.Bot) -> None:
     await bot.add_cog(UnoCog(bot))

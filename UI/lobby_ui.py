@@ -68,6 +68,16 @@ class LobbyUI(Interactions):
 
         await self._renderer.update_from_interaction(interaction, lobby)
 
+        # Trigger AFK Timer
+        import asyncio
+        cog = interaction.client.get_cog("UnoCog")
+        if cog:
+            asyncio.create_task(cog._run_afk_timer(
+                cid,
+                lobby.game.current_player(),
+                lobby.game.state["turn_count"]
+            ))
+
     @discord.ui.button(label="🚨 Disband Game", style=discord.ButtonStyle.danger)
     async def disband(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         cid = require_channel_id(interaction)
