@@ -77,3 +77,6 @@ For faster slash command updates during development, add this to your .env:
 GUILD_ID=your_server_id
 ```
 This syncs commands instantly to that server. If not set, commands sync globally and may take longer to appear.
+
+### 6) Testing
+To run all tests, run `pytest` in the virtual environment.
