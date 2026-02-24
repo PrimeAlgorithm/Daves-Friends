@@ -2,7 +2,25 @@ import discord
 from models.lobby_model import Lobby
 from utils.utils import mention
 from views.base_views import BaseViews
-from models.deck import NUMBER_EMOJIS, COLOR_EMOJIS
+from models.deck import (
+    NUMBER_EMOJIS, COLOR_EMOJIS,
+    Number, Skip, Reverse, DrawTwo, Wild, DrawFourWild, Card
+)
+
+def _card_display(card: Card) -> str:
+    if isinstance(card, Number):
+        return f"{COLOR_EMOJIS[card.color]}{NUMBER_EMOJIS[card.number]}"
+    if isinstance(card, Skip):
+        return f"{COLOR_EMOJIS[card.color]}⏭️"
+    if isinstance(card, Reverse):
+        return f"{COLOR_EMOJIS[card.color]}🔄"
+    if isinstance(card, DrawTwo):
+        return f"{COLOR_EMOJIS[card.color]}➕2"
+    if isinstance(card, Wild):
+        return f"🌈{COLOR_EMOJIS[card.color] if card.color else ''}"
+    if isinstance(card, DrawFourWild):
+        return f"➕4🌈{COLOR_EMOJIS[card.color] if card.color else ''}"
+    return str(card)
 
 class GameViews(BaseViews):
     def game_embed(self, lobby: Lobby) -> discord.Embed:
@@ -22,10 +40,7 @@ class GameViews(BaseViews):
 
 
         embed.add_field(name="Current Turn", value=players_turn, inline=False)
-
         card = lobby.game.top_card()
-        card_display = COLOR_EMOJIS[card.color] + NUMBER_EMOJIS[card.number]
-
-        embed.add_field(name="Card On Top", value=card_display, inline=False)
+        embed.add_field(name="Card On Top", value=_card_display(card) if card else "(none)", inline=False)
 
         return embed
