@@ -1,6 +1,6 @@
 import unittest
 
-from utils import mention
+from utils.utils import mention
 
 class TestUtils(unittest.TestCase):
     def test_mention(self):
