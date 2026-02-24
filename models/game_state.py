@@ -79,6 +79,7 @@ class GameState:
             "deck": [],  # list with cards
             "discard": [],
             "turn_index": 0,  # index representing which users turn it is
+            "turn_count": 0, # counter representing the current turn #
             "direction": Direction.CLOCKWISE,
             "winner": None,
         }
@@ -104,6 +105,9 @@ class GameState:
     def top_card(self) -> Card | None:
         discard = self.state["discard"]
         return discard[-1] if discard else None
+    
+    def turn_count(self) -> int:
+        return self.state["turn_count"]
 
     # Actions
     def add_player(self, user_id: int) -> None:
@@ -304,6 +308,7 @@ class GameState:
             return
         n = len(players)
         self.state["turn_index"] = (self.state["turn_index"] + steps * self._dir_sign()) % n
+        self.state["turn_count"] += 1
 
     def _peek_next_player_id(self) -> int:
         players: list[int] = self.state["players"]
