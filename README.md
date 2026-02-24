@@ -62,6 +62,7 @@ source .venv/bin/activate
 ```
 
 ### 3) Install dependencies
+To install all dependencies and install uno_discord (include the `--editable` flag for the command to update automatically during development).
 ```bash
 pip install --editable .
 ```
@@ -78,5 +79,15 @@ GUILD_ID=your_server_id
 ```
 This syncs commands instantly to that server. If not set, commands sync globally and may take longer to appear.
 
-### 6) Testing
+### 6) Running
+To run the bot, execute `uno_discord`.
+```bash
+uno_discord
+```
+
+### 7) Testing
+First, make sure to install the test dependencies:
+```bash
+pip install --editable .["test"]
+```
 To run all tests, run `pytest` in the virtual environment.
