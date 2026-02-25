@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from models.deck import Card, Number, Skip, Reverse, DrawTwo, Wild, DrawFourWild
+from discord.ext.commands.parameters import empty
+
+from models.deck import Card, Number, Skip, Reverse, DrawTwo, Wild, DrawFourWild, Color
 
 import discord
 from discord import app_commands
@@ -50,7 +52,7 @@ class UnoCog(commands.Cog):
 
         # Services
         self.lobby_service = LobbyService(self.lobby_repo)
-        self.game_service = GameService()
+        self.game_service = GameService(self.lobby_service)
 
         # Misc
         self._renderer = Renderer(self.lobby_views, self.game_views, self.end_views, self.lobby_service, self.game_service)
@@ -62,8 +64,6 @@ class UnoCog(commands.Cog):
         try:
             lobby = self.lobby_service.create_lobby(cid, interaction.user)
         except GameError as e:
-            print("In the error")
-
             embed = self.lobby_views.error_embed("Lobby Exists" if e.title == "" else e.title, str(e))
             await interaction.response.send_message(embeds=[embed], ephemeral=e.private)
 
@@ -71,6 +71,42 @@ class UnoCog(commands.Cog):
 
         embeds, view = await self._renderer.render(lobby)
         await interaction.response.send_message(embeds=embeds, view=view)
+        msg = await interaction.original_response()
+        lobby.main_message = msg.id
+
+
+    @app_commands.command(name="play", description="Play a card from your hand on your turn (index starts at 0).")
+    @app_commands.describe(card_index="Index of the card in your hand (0-based).",
+                           color="Required for Wild / Draw4 (red/yellow/blue/green).")
+    @app_commands.choices(color=[
+        app_commands.Choice(name="Red", value="red"),
+        app_commands.Choice(name="Yellow", value="yellow"),
+        app_commands.Choice(name="Blue", value="blue"),
+        app_commands.Choice(name="Green", value="green"),
+    ])
+    async def play(
+            self,
+            interaction: discord.Interaction,
+            card_index: int | None = None,
+            color: app_commands.Choice[str] | None = None,
+    ) -> None:
+        cid = require_channel_id(interaction)
+        lobby = self.lobby_service.get_lobby(cid)
+        main_msg_id = lobby.main_message
+
+        try:
+            if card_index is None and color is None:
+                raise GameError("You must specify either a card index or a color.", title="Game Error", private=True)
+
+            self.game_service.play_card(cid, interaction.user.id, card_index, Color[color.value.upper()] if color else None)
+        except GameError as e:
+            embed = self.lobby_views.error_embed("Lobby Exists" if e.title == "" else e.title, str(e))
+            await interaction.response.send_message(embeds=[embed], ephemeral=e.private)
+
+            return
+
+        await self._renderer.update_by_message_id(self.bot, cid, main_msg_id, lobby)
+        await interaction.response.send_message("Successfully played card!", ephemeral=True)
 
 
 async def setup(bot: commands.Bot) -> None:

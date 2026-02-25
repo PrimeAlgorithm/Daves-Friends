@@ -49,4 +49,12 @@ class Renderer:
             await interaction.message.edit(embeds=embeds, view=view)
 
     async def update_by_message_id(self, bot: discord.Client, channel_id: int, message_id: int, lobby: Lobby):
-        pass
+        embeds, view = await self.render(lobby)
+
+        channel = bot.get_channel(channel_id)
+        if channel is None:
+            channel = await bot.fetch_channel(channel_id)
+
+        message = await channel.fetch_message(message_id)
+
+        await message.edit(embeds=embeds, view=view)

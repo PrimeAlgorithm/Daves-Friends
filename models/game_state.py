@@ -149,30 +149,31 @@ class GameState:
 
     def play(self, user_id: int, card_index: int, choose_color: Color | None = None) -> PlayResult:
         if self.phase() != Phase.PLAYING:
-            raise GameError("Game not started.")
+            raise GameError("The game has not started yet!", title="Game Not Started", private=True)
         if user_id != self.current_player():
-            raise GameError("Not your turn.")
+            raise GameError("It is currently not your turn to play.", title="Wrong Turn", private=True)
 
         hand = self.state["hands"].get(user_id, [])
         if card_index < 0 or card_index >= len(hand):
-            raise GameError("Invalid card index.")
+            raise GameError("That is not a valid card index", title="Invalid Card Index", private=True)
 
         top = self.top_card()
         if top is None:
-            raise GameError("No top card.")
+            raise GameError("There is no card on top!", title="No Top Card!", private=True)
 
         card = hand[card_index]
 
         if isinstance(card, (Wild, DrawFourWild)):
             if choose_color is None:
-                raise GameError("You must choose a color for Wild/Draw4.")
+                raise GameError("You must choose a color for Wild/Draw4.", title="Picked Incorrectly", private=True)
             card.color = choose_color
 
         if not can_play_card(top, card):
-            raise GameError("You can't play that card on the current top card.")
+            raise GameError("You can't play that card on the current top card.", title="Incorrect Card", private=True)
 
         played = hand.pop(card_index)
         self.state["discard"].append(played)
+
 
         res = PlayResult(
             played_by=user_id,

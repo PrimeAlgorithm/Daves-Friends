@@ -7,3 +7,4 @@ from discord.interactions import User
 class Lobby:
     user: User
     game: GameState
+    main_message: int | None
