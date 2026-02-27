@@ -118,4 +118,4 @@ class GameUI(Interactions):
 
         cog = interaction.client.get_cog("UnoCog")
         if cog is not None:
-            await cog._dm_current_player_turn(self.lobby, interaction.channel_id)
+            await cog.dm_current_player_turn(self.lobby, interaction.channel_id)

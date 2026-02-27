@@ -115,7 +115,7 @@ class UnoCog(commands.Cog):
             return
 
         await self._renderer.update_by_message_id(self.bot, cid, main_msg_id, lobby)
-        await self._dm_current_player_turn(lobby, cid)
+        await self.dm_current_player_turn(lobby, cid)
         await interaction.response.send_message(
             "Successfully played card!", ephemeral=True
         )
@@ -132,7 +132,7 @@ class UnoCog(commands.Cog):
 
         await user.send(embed=embed)
 
-    async def _dm_current_player_turn(self, lobby, channel_id: int) -> None:
+    async def dm_current_player_turn(self, lobby, channel_id: int) -> None:
         """
         DMs the current player when it becomes their turn, including a link to the game.
         """
@@ -163,45 +163,45 @@ class UnoCog(commands.Cog):
             pass
 
     async def run_afk_timer(
-            self, channel_id: int, player_id: int, start_turn_count: int
+        self, channel_id: int, player_id: int, start_turn_count: int
+    ):
+        """
+        Skips a player's turn if they don't play in 60 seconds.
+        """
+        await asyncio.sleep(60)
+
+        try:
+            lobby = self.lobby_service.get_lobby(channel_id)
+            game = lobby.game
+        except GameError:
+            return
+
+        if game.phase().name != "PLAYING":
+            return
+
+        if (
+            game.current_player() == player_id
+            and game.state["turn_count"] == start_turn_count
         ):
-            """
-            Skips a player's turn if they don't play in 60 seconds.
-            """
-            await asyncio.sleep(60)
-
             try:
-                lobby = self.lobby_service.get_lobby(channel_id)
-                game = lobby.game
-            except GameError:
-                return
+                game.draw_and_pass(player_id)
 
-            if game.phase().name != "PLAYING":
-                return
+                channel = self.bot.get_channel(channel_id)
+                if channel:
+                    await channel.send(
+                        f" <@{player_id}> was AFK. They drew a card and was skipped."
+                    )
 
-            if (
-                game.current_player() == player_id
-                and game.state["turn_count"] == start_turn_count
-            ):
-                try:
-                    game.draw_and_pass(player_id)
+                    embeds, view, files = await self._renderer.render(lobby)
+                    await channel.send(embeds=embeds, view=view, files=files)
 
-                    channel = self.bot.get_channel(channel_id)
-                    if channel:
-                        await channel.send(
-                            f" <@{player_id}> was AFK. They drew a card and was skipped."
+                    asyncio.create_task(
+                        self.run_afk_timer(
+                            channel_id, game.current_player(), game.state["turn_count"]
                         )
-
-                        embeds, view, files = await self._renderer.render(lobby)
-                        await channel.send(embeds=embeds, view=view, files=files)
-
-                        asyncio.create_task(
-                            self.run_afk_timer(
-                                channel_id, game.current_player(), game.state["turn_count"]
-                            )
-                        )
-                except GameError as e:
-                    print(f"AFK Timer Error: {e}")
+                    )
+            except GameError as e:
+                print(f"AFK Timer Error: {e}")
 
 
 async def setup(bot: commands.Bot) -> None:
