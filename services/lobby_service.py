@@ -1,3 +1,7 @@
+"""
+Provides a lobby manager.
+"""
+
 from discord.interactions import User
 
 from models.game_state import GameError, GameState, Phase
@@ -6,10 +10,19 @@ from repos.lobby_repo import LobbyRepository
 
 
 class LobbyService:
+    """
+    The lobby service which manages various lobbies and provides functions for joining, starting,
+    leaving, and disbanding them.
+    """
+
     def __init__(self, repo: LobbyRepository):
         self._lobby_repo = repo
 
     def create_lobby(self, channel_id: int, user: User) -> Lobby:
+        """
+        Creates a lobby in a channel.
+        """
+
         if self._lobby_repo.exists(channel_id):
             raise GameError(
                 "A lobby already exists in this channel. Join this lobby or skedaddle!",
@@ -23,12 +36,20 @@ class LobbyService:
         return self._lobby_repo.get(channel_id)
 
     def start_lobby(self, channel_id: int) -> Lobby:
+        """
+        Starts a lobby.
+        """
+
         lobby = self._lobby_repo.get(channel_id)
         lobby.game.start_game()
 
         return self._lobby_repo.get(channel_id)
 
     def join_lobby(self, channel_id: int, user: User) -> Lobby:
+        """
+        Adds a user to a lobby.
+        """
+
         if not self._lobby_repo.exists(channel_id):
             raise GameError(
                 "There is no lobby in this channel. Run `/create` to make one.",
@@ -57,6 +78,10 @@ class LobbyService:
         return lobby
 
     def leave_lobby(self, channel_id: int, user: User) -> Lobby:
+        """
+        Removes a user from a lobby.
+        """
+
         if not self._lobby_repo.exists(channel_id):
             raise GameError(
                 "There is no lobby in this channel. Run `/create` to make one.",
@@ -83,6 +108,10 @@ class LobbyService:
         return lobby
 
     def disband_lobby(self, channel_id: int, user: User) -> None:
+        """
+        Disbands a lobby if it exists. Handling error conditions.
+        """
+
         if not self._lobby_repo.exists(channel_id):
             raise GameError(
                 "There is no lobby in this channel. Run `/create` to make one.",
@@ -100,6 +129,10 @@ class LobbyService:
         self._lobby_repo.delete(channel_id)
 
     def get_lobby(self, channel_id: int) -> Lobby:
+        """
+        Gets a lobby and returns it. Raises an error otherwise.
+        """
+
         if not self._lobby_repo.exists(channel_id):
             raise GameError("Lobby doesn't exist.")
 

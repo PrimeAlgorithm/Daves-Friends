@@ -1,3 +1,7 @@
+"""
+Provides the Discord commands and high-level validation of them.
+"""
+
 from __future__ import annotations
 
 import asyncio
@@ -6,38 +10,21 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from models.deck import Card, Number, Skip, Reverse, DrawTwo, Wild, DrawFourWild, Color
+from models.deck import Color
 from models.game_state import GameError
 from repos.lobby_repo import LobbyRepository
 from services.game_service import GameService
 from services.lobby_service import LobbyService
 from utils.utils import require_channel_id
-from views.end_views import EndViews
-from views.game_views import GameViews
-from views.hand_views import HandViews
-from views.lobby_views import LobbyViews
 from views.renderer import Renderer
 
 
-def format_card(card: Card | None) -> str:
-    if card is None:
-        return "(none)"
-    if isinstance(card, Number):
-        return f"{card.color.name} {card.number}"
-    if isinstance(card, Skip):
-        return f"{card.color.name} SKIP"
-    if isinstance(card, Reverse):
-        return f"{card.color.name} REVERSE"
-    if isinstance(card, DrawTwo):
-        return f"{card.color.name} DRAW2"
-    if isinstance(card, DrawFourWild):
-        return f"DRAW4 ({card.color.name if card.color else 'unpicked'})"
-    if isinstance(card, Wild):
-        return f"WILD ({card.color.name if card.color else 'unpicked'})"
-    return str(card)
-
-
 class UnoCog(commands.Cog):
+    """
+    The UnoCog which provides Uno commands to the Discord bot and initializes the rest of the game
+    state, views, and services.
+    """
+
     def __init__(self, bot: commands.Bot):
         # Bot
         self.bot = bot
@@ -54,12 +41,16 @@ class UnoCog(commands.Cog):
 
     @app_commands.command(name="create", description="Create a lobby in this channel.")
     async def create(self, interaction: discord.Interaction) -> None:
+        """
+        Creates a new lobby.
+        """
+
         cid = require_channel_id(interaction)
 
         try:
             lobby = self.lobby_service.create_lobby(cid, interaction.user)
         except GameError as e:
-            embed = self.lobby_views.error_embed(
+            embed = self._renderer.lobby_views.error_embed(
                 "Lobby Exists" if e.title == "" else e.title, str(e)
             )
             await interaction.response.send_message(embeds=[embed], ephemeral=e.private)
@@ -93,6 +84,10 @@ class UnoCog(commands.Cog):
         card_index: int | None = None,
         color: app_commands.Choice[str] | None = None,
     ) -> None:
+        """
+        Plays a card by index, choosing a color if it's a wild.
+        """
+
         cid = require_channel_id(interaction)
         lobby = self.lobby_service.get_lobby(cid)
         main_msg_id = lobby.main_message
@@ -112,7 +107,7 @@ class UnoCog(commands.Cog):
                 Color[color.value.upper()] if color else None,
             )
         except GameError as e:
-            embed = self.lobby_views.error_embed(
+            embed = self._renderer.lobby_views.error_embed(
                 "Lobby Exists" if e.title == "" else e.title, str(e)
             )
             await interaction.response.send_message(embeds=[embed], ephemeral=e.private)
@@ -128,7 +123,7 @@ class UnoCog(commands.Cog):
         guild = interaction.guild.id
         user = await bot.fetch_user(interaction.user.id)
         hand = lobby.game.hand(interaction.user.id)
-        embed = self.hand_views.hand_embed(
+        embed = self._renderer.hand_views.hand_embed(
             hand,
             optional_message=f"""This is your new hand after your latest action.
             Link to Game: https://discord.com/channels/{guild}/{cid}/{lobby.main_message}""",
@@ -136,15 +131,18 @@ class UnoCog(commands.Cog):
 
         await user.send(embed=embed)
 
-    async def _run_afk_timer(
+    async def run_afk_timer(
         self, channel_id: int, player_id: int, start_turn_count: int
     ):
+        """
+        Skips a player's turn if they don't play in 60 seconds.
+        """
         await asyncio.sleep(60)
 
         try:
             lobby = self.lobby_service.get_lobby(channel_id)
             game = lobby.game
-        except Exception:
+        except GameError:
             return
 
         if game.phase().name != "PLAYING":
@@ -167,13 +165,17 @@ class UnoCog(commands.Cog):
                     await channel.send(embeds=embeds, view=view, files=files)
 
                     asyncio.create_task(
-                        self._run_afk_timer(
+                        self.run_afk_timer(
                             channel_id, game.current_player(), game.state["turn_count"]
                         )
                     )
-            except Exception as e:
+            except GameError as e:
                 print(f"AFK Timer Error: {e}")
 
 
 async def setup(bot: commands.Bot) -> None:
+    """
+    Adds a new instance of UnoCog to the bot.
+    """
+
     await bot.add_cog(UnoCog(bot))
