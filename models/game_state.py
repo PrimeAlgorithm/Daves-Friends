@@ -182,8 +182,7 @@ class GameState:
 
         hands = _deal_starting_hands(self.state["players"], draw_pile)
         discard_pile: list[Card] = []
-        # _ = self._draw_first_valid_start_card(draw_pile, discard_pile)
-        discard_pile.append(Number(Color.RED, 0))
+        _ = self._draw_first_valid_start_card(draw_pile, discard_pile)
 
         self.state["hands"] = hands
         self.state["deck"] = draw_pile
