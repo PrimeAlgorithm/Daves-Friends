@@ -104,6 +104,6 @@ class BaseViews:
             embed.set_image(url=self.get_random_gif())
 
         if author:
-            embed.set_author(name=author.name, icon_url=author.avatar.url)
+            embed.set_author(name=author.name, icon_url=author.display_avatar.url)
 
         return embed
