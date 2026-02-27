@@ -5,11 +5,13 @@ Provides classes and functions related to the operation of a game.
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 
+import random
+import time
+
 from dataclasses import dataclass, field
 from typing import Any
 from enum import Enum, auto
 
-import random
 from models.deck import (
     Card,
     Color,
@@ -23,8 +25,6 @@ from models.deck import (
     Number,
 )
 from models import bot
-
-import time
 
 class Phase(Enum):
     LOBBY = auto()
@@ -133,10 +133,10 @@ class GameState:
 
     def turn_count(self) -> int:
         return self.state["turn_count"]
-    
+
     def uno_vulnerable(self) -> int | None:
         return self.state["uno_vulnerable"]
-    
+
     def uno_grace_active(self) -> bool:
         return (
             self.state["uno_vulnerable"] is not None
@@ -430,7 +430,7 @@ class GameState:
 
     def _dir_sign(self) -> int:
         return 1 if self.state["direction"] == Direction.CLOCKWISE else -1
-    
+
     def _now(self) -> float:
         return time.monotonic()
 
@@ -447,11 +447,11 @@ class GameState:
         else:
             if self.state["uno_vulnerable"] == user_id:
                 self._clear_uno()
-    
+
     def call_uno(self, caller_id: int) -> dict[str, Any]:
         if self.phase() != Phase.PLAYING:
             raise GameError("Game is not currently playing.", private=True)
-        
+
         target = self.state["uno_vulnerable"]
         if target is None:
             return {"result": "no_target", "caller": caller_id}
@@ -460,11 +460,11 @@ class GameState:
         if caller_id == target:
             self._clear_uno()
             return {"result": "safe", "target": target, "caller": caller_id}
-        
+
         # other players trying to catch vulnerable player
         if self._now() < self.state["uno_grace_until"]:
             return {"result": "too_early", "target": target, "caller": caller_id}
-        
+
         self._draw_many_to(target, 2)
         self._clear_uno()
         return {"result": "penalty", "target": target, "caller": caller_id}
