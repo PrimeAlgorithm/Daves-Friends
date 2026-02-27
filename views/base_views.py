@@ -32,6 +32,7 @@ class BaseViews:
             0xFAEBD7,
             0x008080,
         ]
+        # pylint: disable=line-too-long
         self._cool_gifs = [
             "https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExcjVoYXFxM3g2ZWRsaDYyOHozOW53MTYxd2J6MmtrejhnNm1vNG90dyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/wrmVCNbpOyqgJ9zQTn/giphy.gif",
             "https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExajFhZTQwaWpoN3E5dTltYmxsZGF6bXJ0Y2tuYXhmNGhuYTl0ajZtZiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/1351TySLYhyXII/giphy.gif",
@@ -52,7 +53,7 @@ class BaseViews:
         """
         return random.choice(self._cool_gifs)
 
-    def update_embed(self, title: str, desc: str, gif=True) -> discord.Embed:
+    def update_embed(self, title: str, desc: str) -> discord.Embed:
         """
         Provides the framework for a Discord embed that displays an update.
         """
@@ -64,12 +65,14 @@ class BaseViews:
             time_stamp=True,
         )
 
-    def error_embed(self, title: str, desc: str, gif=True) -> discord.Embed:
+    def error_embed(self, title: str, desc: str) -> discord.Embed:
         """
         Provides the framework for a Discord embed that displays an error.
         """
         return self._build_embed("ERROR: " + title, desc, self._error_color, True)
 
+    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-positional-arguments
     def _build_embed(
         self,
         title: str,
@@ -79,7 +82,7 @@ class BaseViews:
         footer: bool = True,
         time_stamp: bool = True,
         random_gif: bool = False,
-        author: discord.Interaction.user = None,
+        author: discord.User = None,
     ) -> discord.Embed:
 
         embed = discord.Embed(

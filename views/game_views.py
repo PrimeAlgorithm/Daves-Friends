@@ -1,3 +1,7 @@
+"""
+Provides a view into the current game state.
+"""
+
 import discord
 from utils.utils import mention
 from utils.card_image import get_card_filename
@@ -17,23 +21,33 @@ from models.deck import (
 
 
 def _card_display(card: Card) -> str:
+    card = str(card)
     if isinstance(card, Number):
-        return f"{COLOR_EMOJIS[card.color]}{NUMBER_EMOJIS[card.number]}"
+        card = f"{COLOR_EMOJIS[card.color]}{NUMBER_EMOJIS[card.number]}"
     if isinstance(card, Skip):
-        return f"{COLOR_EMOJIS[card.color]}⏭️"
+        card = f"{COLOR_EMOJIS[card.color]}⏭️"
     if isinstance(card, Reverse):
-        return f"{COLOR_EMOJIS[card.color]}🔄"
+        card = f"{COLOR_EMOJIS[card.color]}🔄"
     if isinstance(card, DrawTwo):
-        return f"{COLOR_EMOJIS[card.color]}➕2"
+        card = f"{COLOR_EMOJIS[card.color]}➕2"
     if isinstance(card, Wild):
-        return f"🌈{COLOR_EMOJIS[card.color] if card.color else ''}"
+        card = f"🌈{COLOR_EMOJIS[card.color] if card.color else ''}"
     if isinstance(card, DrawFourWild):
-        return f"➕4🌈{COLOR_EMOJIS[card.color] if card.color else ''}"
-    return str(card)
+        card = f"➕4🌈{COLOR_EMOJIS[card.color] if card.color else ''}"
+    return card
 
 
 class GameViews(BaseViews):
+    """
+    The game view displaying the current game state.
+    """
+
     def game_embed(self, lobby: Lobby) -> tuple[discord.Embed, discord.File | None]:
+        """
+        Creates an embed for the game, displaying the game creator, the current players, whose turn
+        it is, and the top card.
+        """
+
         embed = self._build_embed(
             title="Game by " + lobby.user.name,
             desc="A game of UNO is in progress!",

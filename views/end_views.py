@@ -1,3 +1,6 @@
+"""
+Provides a view into the end of a game.
+"""
 import discord
 
 from views.base_views import BaseViews
@@ -6,8 +9,16 @@ from utils.utils import mention
 
 
 class EndViews(BaseViews):
+    """
+    The game view displaying the end of a game.
+    """
 
     def end_embed(self, lobby: Lobby) -> discord.Embed:
+        """
+        Creates an embed for the end of a game, congratulating the winner and displaying statistics
+        about the game.
+        """
+
         winner_id = lobby.game.state["winner"]
         hands = lobby.game.state["hands"]
         turn_count = lobby.game.turn_count()

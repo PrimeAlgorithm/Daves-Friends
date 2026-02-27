@@ -42,12 +42,6 @@ class UnoCog(commands.Cog):
         # Bot
         self.bot = bot
 
-        # Views
-        self.lobby_views = LobbyViews()
-        self.game_views = GameViews()
-        self.end_views = EndViews()
-        self.hand_views = HandViews()
-
         # Repos
         self.lobby_repo = LobbyRepository()
 
@@ -55,15 +49,8 @@ class UnoCog(commands.Cog):
         self.lobby_service = LobbyService(self.lobby_repo)
         self.game_service = GameService(self.lobby_service)
 
-        # Misc
-        self._renderer = Renderer(
-            self.lobby_views,
-            self.game_views,
-            self.end_views,
-            self.hand_views,
-            self.lobby_service,
-            self.game_service,
-        )
+        # Initialize renderer
+        self._renderer = Renderer(self.lobby_service, self.game_service)
 
     @app_commands.command(name="create", description="Create a lobby in this channel.")
     async def create(self, interaction: discord.Interaction) -> None:

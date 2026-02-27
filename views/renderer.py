@@ -1,3 +1,7 @@
+"""
+Provides a renderer for all of the views.
+"""
+
 import discord
 
 from ui.end_ui import EndUI
@@ -15,25 +19,29 @@ from views.lobby_views import LobbyViews
 
 
 class Renderer:
+    """
+    The renderer which compiles and manages all of the views.
+    """
+
     def __init__(
         self,
-        lobby_views: LobbyViews,
-        game_views: GameViews,
-        end_views: EndViews,
-        hand_views: HandViews,
         lobby_service: LobbyService,
         game_service: GameService,
     ):
-        self.lobby_views = lobby_views
-        self.game_views = game_views
-        self.end_views = end_views
-        self.hand_views = hand_views
+        self.lobby_views = LobbyViews()
+        self.game_views = GameViews()
+        self.end_views = EndViews()
+        self.hand_views = HandViews()
+
         self.lobby_service = lobby_service
         self.game_service = game_service
 
     async def render(
         self, lobby: Lobby
     ) -> tuple[list[discord.Embed], Interactions, list[discord.File]]:
+        """
+        Renders all of the views to a list of embeds.
+        """
 
         if lobby.game.phase() == Phase.LOBBY:
             embed = self.lobby_views.lobby_embed(lobby)
@@ -55,6 +63,10 @@ class Renderer:
     async def update_from_interaction(
         self, interaction: discord.Interaction, lobby: Lobby
     ):
+        """
+        Updates a view based on a Discord interaction.
+        """
+
         embeds, view, files = await self.render(lobby)
 
         if not interaction.response.is_done():
@@ -78,6 +90,10 @@ class Renderer:
         message_id: int,
         lobby: Lobby,
     ):
+        """
+        Re-renders an embed by its message ID.
+        """
+
         embeds, view, files = await self.render(lobby)
 
         channel = bot.get_channel(channel_id)
