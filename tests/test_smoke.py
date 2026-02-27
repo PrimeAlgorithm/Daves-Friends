@@ -1,3 +1,7 @@
+"""
+Runs basic smoke tests to ensure modules work at a high level.
+"""
+
 import importlib
 
 from models import deck

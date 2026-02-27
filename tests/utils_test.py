@@ -1,8 +1,12 @@
-import unittest
+"""
+Tests the utilities.
+"""
 
 from utils.utils import mention
 
 
-class TestUtils(unittest.TestCase):
-    def test_mention(self):
-        self.assertTrue(mention(20) == "<@20>")
+def test_mention():
+    """
+    Makes sure that formatting Discord mentions works correctly.
+    """
+    assert mention(20) == "<@20>"

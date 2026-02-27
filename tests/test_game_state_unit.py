@@ -1,3 +1,7 @@
+"""
+Tests the game state class.
+"""
+
 import pytest
 
 from models.game_state import GameState, GameError, Phase
