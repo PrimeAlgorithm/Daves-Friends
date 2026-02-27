@@ -192,8 +192,7 @@ class UnoCog(commands.Cog):
                         f" <@{player_id}> was AFK. They drew a card and was skipped."
                     )
 
-                    embeds, view, files = await self._renderer.render(lobby)
-                    await channel.send(embeds=embeds, view=view, files=files)
+                    await self._renderer.update_by_message_id(self.bot, channel_id, lobby.main_message, lobby)
 
                     asyncio.create_task(
                         self.run_afk_timer(
