@@ -9,6 +9,7 @@ import asyncio
 import discord
 from discord import app_commands
 from discord.ext import commands
+from discord.app_commands.errors import CommandInvokeError
 
 from models.deck import Color
 from models.game_state import GameError
@@ -61,6 +62,12 @@ class UnoCog(commands.Cog):
         await interaction.response.send_message(embeds=embeds, view=view, files=files)
         msg = await interaction.original_response()
         lobby.main_message = msg.id
+
+        try:
+            await msg.pin()
+        except (CommandInvokeError, discord.errors.Forbidden):
+            # Silently fail if we can't ping.
+            pass
 
     @app_commands.command(
         name="play",
