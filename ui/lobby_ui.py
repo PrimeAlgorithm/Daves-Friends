@@ -4,7 +4,6 @@ Providers the user interface for the lobby.
 
 from __future__ import annotations
 from typing import TYPE_CHECKING
-import asyncio
 
 import discord.ui
 from models.game_state import GameError
