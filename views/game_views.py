@@ -2,7 +2,7 @@
 Provides a view into the current game state.
 """
 
-from datetime import datetime, timezone
+from datetime import timezone
 import discord
 from models.deck import (
     NUMBER_EMOJIS,
