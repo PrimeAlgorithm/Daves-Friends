@@ -3,6 +3,7 @@ Provides a view into the current game state.
 """
 
 import discord
+from datetime import datetime, timezone
 from utils.utils import mention
 from utils.card_image import get_card_filename
 from views.base_views import BaseViews
@@ -68,6 +69,25 @@ class GameViews(BaseViews):
                 players_turn += mention(player)
 
         embed.add_field(name="Current Turn", value=players_turn, inline=False)
+
+                # AFK Timer (shows remaining seconds, if the game has afk_deadline set)
+        afk_deadline = getattr(lobby.game, "afk_deadline", None)
+
+        if afk_deadline is not None:
+            now = datetime.now(timezone.utc)
+
+            # If the deadline has no timezone info, assume UTC
+            if getattr(afk_deadline, "tzinfo", None) is None:
+                afk_deadline = afk_deadline.replace(tzinfo=timezone.utc)
+
+            remaining = int((afk_deadline - now).total_seconds())
+            remaining = max(0, remaining)
+
+            embed.add_field(
+                name="AFK Timer",
+                value=f"⏳ {remaining}s remaining",
+                inline=False,
+            )
 
         card = lobby.game.top_card()
         file = None

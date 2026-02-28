@@ -8,7 +8,7 @@ import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(dotenv_path=".env")
 
 intents = discord.Intents.default()
 # message_content not needed for slash commands, but harmless:
