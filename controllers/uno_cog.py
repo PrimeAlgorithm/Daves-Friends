@@ -210,6 +210,7 @@ class UnoCog(commands.Cog):
                 print(f"AFK Timer Error: {e}")
 
     def start_afk_timer(self, channel_id: int, lobby) -> None:
+        """Starts an AFK timer task for the current player."""
         game = lobby.game
 
         if game.phase().name != "PLAYING":
