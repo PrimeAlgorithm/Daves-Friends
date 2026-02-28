@@ -2,7 +2,6 @@
 Provides a view into the current game state.
 """
 
-import discord
 from datetime import datetime, timezone
 from utils.utils import mention
 from utils.card_image import get_card_filename
@@ -19,6 +18,7 @@ from models.deck import (
     DrawFourWild,
     Card,
 )
+import discord
 
 
 def _card_display(card: Card) -> str:
