@@ -69,22 +69,19 @@ class GameViews(BaseViews):
 
         embed.add_field(name="Current Turn", value=players_turn, inline=False)
 
-                # AFK Timer (shows remaining seconds, if the game has afk_deadline set)
-        afk_deadline = getattr(lobby.game, "afk_deadline", None)
+        afk_deadline_attr = getattr(lobby.game, "afk_deadline", None)
+        afk_deadline = afk_deadline_attr() if callable(afk_deadline_attr) else afk_deadline_attr
 
         if afk_deadline is not None:
-            now = datetime.now(timezone.utc)
-
-            # If the deadline has no timezone info, assume UTC
-            if getattr(afk_deadline, "tzinfo", None) is None:
+            # Ensure it's an aware UTC datetime
+            if afk_deadline.tzinfo is None:
                 afk_deadline = afk_deadline.replace(tzinfo=timezone.utc)
-
-            remaining = int((afk_deadline - now).total_seconds())
-            remaining = max(0, remaining)
+            else:
+                afk_deadline = afk_deadline.astimezone(timezone.utc)
 
             embed.add_field(
                 name="AFK Timer",
-                value=f"⏳ {remaining}s remaining",
+                value=f"⏳ Expires {discord.utils.format_dt(afk_deadline, style='R')}",
                 inline=False,
             )
 

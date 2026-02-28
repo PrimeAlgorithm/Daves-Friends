@@ -126,14 +126,9 @@ class LobbyUI(Interactions):
 
             await user.send(embed=embed)
 
-        # Trigger AFK Timer
         cog = interaction.client.get_cog("UnoCog")
         if cog:
-            asyncio.create_task(
-                cog.run_afk_timer(
-                    cid, lobby.game.current_player(), lobby.game.state["turn_count"]
-                )
-            )
+            cog.start_afk_timer(cid, lobby)
 
     @discord.ui.button(label="🚨 Disband Game", style=discord.ButtonStyle.danger)
     async def disband(
