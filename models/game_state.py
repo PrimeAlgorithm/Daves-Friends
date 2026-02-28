@@ -140,7 +140,7 @@ class GameState:
         return self.state["turn_count"]
     
     def afk_deadline(self):
-    return self.state.get("afk_deadline")
+        return self.state.get("afk_deadline")
 
     def uno_vulnerable(self) -> int | None:
         return self.state["uno_vulnerable"]
@@ -444,10 +444,10 @@ class GameState:
         return time.monotonic()
     
     def _set_afk_deadline(self, seconds: int = 60) -> None:
-    self.state["afk_deadline"] = datetime.now(timezone.utc) + timedelta(seconds=seconds)
+        self.state["afk_deadline"] = datetime.now(timezone.utc) + timedelta(seconds=seconds)
 
     def _clear_afk_deadline(self) -> None:
-    self.state["afk_deadline"] = None
+        self.state["afk_deadline"] = None
 
     def _clear_uno(self) -> None:
         self.state["uno_vulnerable"] = None
