@@ -42,3 +42,10 @@ class GameService:
         """
         lobby = self.lobby_service.get_lobby(channel_id)
         return lobby.game.call_uno(caller_id)
+
+    def end_game(self, channel_id: int) -> None:
+        """
+        Ends the current game for a channel.
+        """
+        lobby = self.lobby_service.get_lobby(channel_id)
+        lobby.game.reset()
