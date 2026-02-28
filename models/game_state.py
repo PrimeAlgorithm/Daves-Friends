@@ -103,10 +103,8 @@ class GameState:
             "turn_index": 0,  # index representing which users turn it is
             "turn_count": 0,  # counter representing the current turn #
             "afk_deadline": None,  # AFK timer deadline (UTC datetime)
-            "uno_vulnerable": None, # user_id who has 1 card and can be caught
-            "uno_grace_until": 0.0, # tiemstamp when others may start catching
+            "uno_grace_until": 0.0, # timestamp when others may start catching
             "uno_vulnerable": None,  # user_id who has 1 card and can be caught
-            "uno_grace_until": 0.0,  # tiemstamp when others may start catching
             "direction": Direction.CLOCKWISE,
             "winner": None,
         }
@@ -138,7 +136,7 @@ class GameState:
 
     def turn_count(self) -> int:
         return self.state["turn_count"]
-    
+
     def afk_deadline(self):
         return self.state.get("afk_deadline")
 
@@ -442,7 +440,7 @@ class GameState:
 
     def _now(self) -> float:
         return time.monotonic()
-    
+
     def _set_afk_deadline(self, seconds: int = 60) -> None:
         self.state["afk_deadline"] = datetime.now(timezone.utc) + timedelta(seconds=seconds)
 
