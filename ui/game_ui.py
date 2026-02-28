@@ -39,7 +39,9 @@ class GameUI(Interactions):
         await interaction.response.defer(ephemeral=True)
 
         try:
-            result = self.game_service.call_uno(interaction.channel_id, interaction.user.id)
+            result = self.game_service.call_uno(
+                interaction.channel_id, interaction.user.id
+            )
         except GameError as e:
             embed = self._renderer.lobby_views.error_embed(
                 "Game Error" if e.title == "" else e.title, str(e)
@@ -52,18 +54,25 @@ class GameUI(Interactions):
         match result["result"]:
             case "safe":
                 target = result["target"]
-                await interaction.followup.send(f"🟩 <@{target}> called **UNO!**", ephemeral=False)
+                await interaction.followup.send(
+                    f"🟩 <@{target}> called **UNO!**", ephemeral=False
+                )
             case "too_early":
-                await interaction.followup.send("Too early! Grace period is still active.",
-                                                ephemeral=True)
+                await interaction.followup.send(
+                    "Too early! Grace period is still active.", ephemeral=True
+                )
             case "penalty":
                 target = result["target"]
                 caller = result["caller"]
                 await interaction.followup.send(
                     f"🚨 <@{target}> got caught by <@{caller}> "
-                    "and draws **+2** cards!", ephemeral=False)
+                    "and draws **+2** cards!",
+                    ephemeral=False,
+                )
             case "no_target":
-                await interaction.followup.send("No one is currently at UNO.", ephemeral=True)
+                await interaction.followup.send(
+                    "No one is currently at UNO.", ephemeral=True
+                )
             case _:
                 await interaction.followup.send("Unhandled UNO result.", ephemeral=True)
 
@@ -119,3 +128,29 @@ class GameUI(Interactions):
         cog = interaction.client.get_cog("UnoCog")
         if cog is not None:
             await cog.dm_current_player_turn(self.lobby, interaction.channel_id)
+
+    @discord.ui.button(label="🛑 End Game", style=discord.ButtonStyle.danger)
+    async def end_game(
+        self, interaction: discord.Interaction, _button: discord.ui.Button
+    ) -> None:
+        """
+        Ends the current game (host-only).
+        """
+        # host-only check
+        if interaction.user.id != self.lobby.user.id:
+            await interaction.response.send_message(
+                "Only the host can end the game.", ephemeral=True
+            )
+            return
+
+        try:
+            self.game_service.end_game(interaction.channel_id)
+        except GameError as e:
+            embed = self._renderer.lobby_views.error_embed(
+                "Game Error" if e.title == "" else e.title, str(e)
+            )
+            await interaction.response.send_message(embeds=[embed], ephemeral=e.private)
+            return
+
+        await self._renderer.update_from_interaction(interaction, self.lobby)
+        await interaction.followup.send("🛑 Game ended.", ephemeral=True)

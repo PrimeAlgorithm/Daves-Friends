@@ -86,6 +86,7 @@ def test_is_bot():
     assert g.is_bot(players[3])
     assert g.is_bot(players[4])
 
+
 def test_run_bots():
     """
     Make sure bots run smoothly playing with each other.
