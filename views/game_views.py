@@ -3,10 +3,7 @@ Provides a view into the current game state.
 """
 
 from datetime import datetime, timezone
-from utils.utils import mention
-from utils.card_image import get_card_filename
-from views.base_views import BaseViews
-from models.lobby_model import Lobby
+import discord
 from models.deck import (
     NUMBER_EMOJIS,
     COLOR_EMOJIS,
@@ -18,8 +15,10 @@ from models.deck import (
     DrawFourWild,
     Card,
 )
-import discord
-
+from models.lobby_model import Lobby
+from utils.card_image import get_card_filename
+from utils.utils import mention
+from views.base_views import BaseViews
 
 def _card_display(card: Card) -> str:
     card = str(card)
