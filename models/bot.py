@@ -14,6 +14,7 @@ class BotError(Exception):
     """
     An error that occurs within the bot. Currently only happens if an invalid strategy is chosen.
     """
+
     def __init__(self, msg: str):
         super().__init__(msg)
 

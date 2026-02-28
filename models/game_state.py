@@ -26,6 +26,7 @@ from models.deck import (
 )
 from models import bot
 
+
 class Phase(Enum):
     LOBBY = auto()
     PLAYING = auto()
@@ -100,8 +101,8 @@ class GameState:
             "discard": [],
             "turn_index": 0,  # index representing which users turn it is
             "turn_count": 0,  # counter representing the current turn #
-            "uno_vulnerable": None, # user_id who has 1 card and can be caught
-            "uno_grace_until": 0.0, # tiemstamp when others may start catching
+            "uno_vulnerable": None,  # user_id who has 1 card and can be caught
+            "uno_grace_until": 0.0,  # tiemstamp when others may start catching
             "direction": Direction.CLOCKWISE,
             "winner": None,
         }
@@ -269,7 +270,7 @@ class GameState:
         top = self.top_card()
 
         hand = self.state["hands"][user_id]
-        (index, color) = bot.play_card(bot.Strategy.RANDOM, hand, top)
+        index, color = bot.play_card(bot.Strategy.RANDOM, hand, top)
 
         if index is None:
             self.draw_and_pass(user_id)
