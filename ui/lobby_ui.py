@@ -135,6 +135,8 @@ class LobbyUI(Interactions):
                 )
             )
 
+        
+
     @discord.ui.button(label="🚨 Disband Game", style=discord.ButtonStyle.danger)
     async def disband(
         self, interaction: discord.Interaction, _button: discord.ui.Button
