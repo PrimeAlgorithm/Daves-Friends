@@ -123,6 +123,7 @@ class UnoCog(commands.Cog):
 
         await self._renderer.update_by_message_id(self.bot, cid, main_msg_id, lobby)
         await self.dm_current_player_turn(lobby, cid)
+        self.start_afk_timer(cid, lobby)
         await interaction.response.send_message(
             "Successfully played card!", ephemeral=True
         )
@@ -205,14 +206,19 @@ class UnoCog(commands.Cog):
                         lobby.main_message,
                         lobby,
                     )
-
-                    asyncio.create_task(
-                        self.run_afk_timer(
-                            channel_id, game.current_player(), game.state["turn_count"]
-                        )
-                    )
             except GameError as e:
                 print(f"AFK Timer Error: {e}")
+
+    def start_afk_timer(self, channel_id: int, lobby) -> None:
+        """Starts an AFK timer task for the current player."""
+        game = lobby.game
+
+        if game.phase().name != "PLAYING":
+            return
+
+        asyncio.create_task(
+            self.run_afk_timer(channel_id, game.current_player(), game.turn_count())
+        )
 
 
 async def setup(bot: commands.Bot) -> None:

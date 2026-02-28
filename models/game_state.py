@@ -7,6 +7,7 @@ Provides classes and functions related to the operation of a game.
 
 import random
 import time
+from datetime import datetime, timedelta, timezone
 
 from dataclasses import dataclass, field
 from typing import Any
@@ -101,8 +102,9 @@ class GameState:
             "discard": [],
             "turn_index": 0,  # index representing which users turn it is
             "turn_count": 0,  # counter representing the current turn #
+            "afk_deadline": None,  # AFK timer deadline (UTC datetime)
+            "uno_grace_until": 0.0, # timestamp when others may start catching
             "uno_vulnerable": None,  # user_id who has 1 card and can be caught
-            "uno_grace_until": 0.0,  # tiemstamp when others may start catching
             "direction": Direction.CLOCKWISE,
             "winner": None,
         }
@@ -134,6 +136,9 @@ class GameState:
 
     def turn_count(self) -> int:
         return self.state["turn_count"]
+
+    def afk_deadline(self):
+        return self.state.get("afk_deadline")
 
     def uno_vulnerable(self) -> int | None:
         return self.state["uno_vulnerable"]
@@ -192,6 +197,7 @@ class GameState:
         self.state["direction"] = Direction.CLOCKWISE
         self.state["winner"] = None
         self.state["phase"] = Phase.PLAYING
+        self._set_afk_deadline(60)
 
     def play(
         self, user_id: int, card_index: int, choose_color: Color | None = None
@@ -388,6 +394,7 @@ class GameState:
             self.state["turn_index"] + steps * self._dir_sign()
         ) % n
         self.state["turn_count"] += 1
+        self._set_afk_deadline(60)
 
     def _peek_next_player_id(self) -> int:
         players: list[int] = self.state["players"]
@@ -433,6 +440,12 @@ class GameState:
 
     def _now(self) -> float:
         return time.monotonic()
+
+    def _set_afk_deadline(self, seconds: int = 60) -> None:
+        self.state["afk_deadline"] = datetime.now(timezone.utc) + timedelta(seconds=seconds)
+
+    def _clear_afk_deadline(self) -> None:
+        self.state["afk_deadline"] = None
 
     def _clear_uno(self) -> None:
         self.state["uno_vulnerable"] = None

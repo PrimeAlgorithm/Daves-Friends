@@ -2,11 +2,8 @@
 Provides a view into the current game state.
 """
 
+from datetime import timezone
 import discord
-from utils.utils import mention
-from utils.card_image import get_card_filename
-from views.base_views import BaseViews
-from models.lobby_model import Lobby
 from models.deck import (
     NUMBER_EMOJIS,
     COLOR_EMOJIS,
@@ -18,7 +15,10 @@ from models.deck import (
     DrawFourWild,
     Card,
 )
-
+from models.lobby_model import Lobby
+from utils.card_image import get_card_filename
+from utils.utils import mention
+from views.base_views import BaseViews
 
 def _card_display(card: Card) -> str:
     card = str(card)
@@ -68,6 +68,22 @@ class GameViews(BaseViews):
                 players_turn += mention(player)
 
         embed.add_field(name="Current Turn", value=players_turn, inline=False)
+
+        afk_deadline_attr = getattr(lobby.game, "afk_deadline", None)
+        afk_deadline = afk_deadline_attr() if callable(afk_deadline_attr) else afk_deadline_attr
+
+        if afk_deadline is not None:
+            # Ensure it's an aware UTC datetime
+            if afk_deadline.tzinfo is None:
+                afk_deadline = afk_deadline.replace(tzinfo=timezone.utc)
+            else:
+                afk_deadline = afk_deadline.astimezone(timezone.utc)
+
+            embed.add_field(
+                name="AFK Timer",
+                value=f"⏳ Expires {discord.utils.format_dt(afk_deadline, style='R')}",
+                inline=False,
+            )
 
         card = lobby.game.top_card()
         file = None

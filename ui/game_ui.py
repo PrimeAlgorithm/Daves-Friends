@@ -128,6 +128,7 @@ class GameUI(Interactions):
         cog = interaction.client.get_cog("UnoCog")
         if cog is not None:
             await cog.dm_current_player_turn(self.lobby, interaction.channel_id)
+            cog.start_afk_timer(interaction.channel_id, self.lobby)
 
     @discord.ui.button(label="🛑 End Game", style=discord.ButtonStyle.danger)
     async def end_game(
