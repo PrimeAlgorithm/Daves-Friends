@@ -145,7 +145,7 @@ class GameUI(Interactions):
             return
 
         try:
-            self.game_service.end_game(interaction.channel_id)
+            self.game_service.delete_game(interaction.channel_id, interaction.user)
         except GameError as e:
             embed = self._renderer.lobby_views.error_embed(
                 "Game Error" if e.title == "" else e.title, str(e)
@@ -154,4 +154,4 @@ class GameUI(Interactions):
             return
 
         await self._renderer.update_from_interaction(interaction, self.lobby)
-        await interaction.followup.send("🛑 Game ended.", ephemeral=True)
+        await interaction.followup.send("🛑 Game ended.")
