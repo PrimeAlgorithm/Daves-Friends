@@ -10,6 +10,7 @@ from models.deck import Color
 from models.game_state import Phase
 from services.lobby_service import LobbyService
 
+
 class GameService:
     """
     The game service which provides a higher level interface for interacting with games within
@@ -30,7 +31,9 @@ class GameService:
         lobby.game.play(user_id, card_index, color)
 
         # autoplay bots (supports bot chains)
-        while lobby.game.phase() == Phase.PLAYING and lobby.game.is_bot(lobby.game.current_player()):
+        while lobby.game.phase() == Phase.PLAYING and lobby.game.is_bot(
+            lobby.game.current_player()
+        ):
             lobby.game.play_bot()
 
     def draw(self, channel_id: int, user_id: int):
