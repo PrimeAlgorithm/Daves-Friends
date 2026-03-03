@@ -103,7 +103,11 @@ class UnoCog(commands.Cog):
             main_msg_id = lobby.main_message
 
             if card_index is None:
-                raise GameError("You must specify a card index.", title="Missing Card Index", private=True)
+                raise GameError(
+                    "You must specify a card index.",
+                    title="Missing Card Index",
+                    private=True,
+                )
 
             if card_index is None and color is None:
                 raise GameError(

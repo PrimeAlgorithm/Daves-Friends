@@ -20,20 +20,24 @@ from utils.card_image import get_card_filename
 from utils.utils import mention
 from views.base_views import BaseViews
 
+
 def _card_display(card: Card) -> str:
+    display = str(card)
+
     if isinstance(card, Number):
-        return f"{COLOR_EMOJIS[card.color]}{NUMBER_EMOJIS[card.number]}"
-    if isinstance(card, Skip):
-        return f"{COLOR_EMOJIS[card.color]}⏭️"
-    if isinstance(card, Reverse):
-        return f"{COLOR_EMOJIS[card.color]}🔄"
-    if isinstance(card, DrawTwo):
-        return f"{COLOR_EMOJIS[card.color]}➕2"
-    if isinstance(card, Wild):
-        return f"🌈{COLOR_EMOJIS[card.color] if card.color else ''}"
-    if isinstance(card, DrawFourWild):
-        return f"➕4🌈{COLOR_EMOJIS[card.color] if card.color else ''}"
-    return str(card)
+        display = f"{COLOR_EMOJIS[card.color]}{NUMBER_EMOJIS[card.number]}"
+    elif isinstance(card, Skip):
+        display = f"{COLOR_EMOJIS[card.color]}⏭️"
+    elif isinstance(card, Reverse):
+        display = f"{COLOR_EMOJIS[card.color]}🔄"
+    elif isinstance(card, DrawTwo):
+        display = f"{COLOR_EMOJIS[card.color]}➕2"
+    elif isinstance(card, Wild):
+        display = f"🌈{COLOR_EMOJIS[card.color] if card.color else ''}"
+    elif isinstance(card, DrawFourWild):
+        display = f"➕4🌈{COLOR_EMOJIS[card.color] if card.color else ''}"
+
+    return display
 
 
 class GameViews(BaseViews):
@@ -69,7 +73,9 @@ class GameViews(BaseViews):
         embed.add_field(name="Current Turn", value=players_turn, inline=False)
 
         afk_deadline_attr = getattr(lobby.game, "afk_deadline", None)
-        afk_deadline = afk_deadline_attr() if callable(afk_deadline_attr) else afk_deadline_attr
+        afk_deadline = (
+            afk_deadline_attr() if callable(afk_deadline_attr) else afk_deadline_attr
+        )
 
         if afk_deadline is not None:
             # Ensure it's an aware UTC datetime
