@@ -45,6 +45,7 @@ class UnoCog(commands.Cog):
         """
         Creates a new lobby.
         """
+        await interaction.response.defer(ephemeral=True)
 
         cid = require_channel_id(interaction)
 
@@ -54,13 +55,12 @@ class UnoCog(commands.Cog):
             embed = self._renderer.lobby_views.error_embed(
                 "Lobby Exists" if e.title == "" else e.title, str(e)
             )
-            await interaction.response.send_message(embeds=[embed], ephemeral=e.private)
+            await interaction.followup.send(embeds=[embed], ephemeral=True)
 
             return
 
         embeds, view, files = await self._renderer.render(lobby)
-        await interaction.response.send_message(embeds=embeds, view=view, files=files)
-        msg = await interaction.original_response()
+        msg = await interaction.channel.send(embeds=embeds, view=view, files=files)
         lobby.main_message = msg.id
 
         try:
@@ -94,6 +94,7 @@ class UnoCog(commands.Cog):
         """
         Plays a card by index, choosing a color if it's a wild.
         """
+        await interaction.response.defer(ephemeral=True)
 
         cid = require_channel_id(interaction)
 
@@ -118,16 +119,14 @@ class UnoCog(commands.Cog):
             embed = self._renderer.lobby_views.error_embed(
                 "Lobby Exists" if e.title == "" else e.title, str(e)
             )
-            await interaction.response.send_message(embeds=[embed], ephemeral=e.private)
 
+            await interaction.followup.send(embeds=[embed], ephemeral=e.private)
             return
 
         await self._renderer.update_by_message_id(self.bot, cid, main_msg_id, lobby)
         await self.dm_current_player_turn(lobby, cid)
         self.start_afk_timer(cid, lobby)
-        await interaction.response.send_message(
-            "Successfully played card!", ephemeral=True
-        )
+        await interaction.followup.send("Successfully played card!", ephemeral=True)
 
         bot = interaction.client
         guild = interaction.guild.id
