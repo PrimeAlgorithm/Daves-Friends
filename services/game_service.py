@@ -2,6 +2,7 @@
 Provides services for interacting with various games.
 """
 
+from discord.interactions import User
 from typing import Any
 from models.deck import Color
 from services.lobby_service import LobbyService
@@ -50,3 +51,10 @@ class GameService:
         """
         lobby = self.lobby_service.get_lobby(channel_id)
         lobby.game.reset()
+
+    def delete_game(self, channel_id: int, caller: User) -> None:
+        """
+        Deletes the current game for a channel.
+        """
+        self.lobby_service.disband_lobby(channel_id, caller)
+
