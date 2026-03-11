@@ -1,57 +1,31 @@
 # UNO Discord Bot
 A Python Discord bot that lets users play UNO inside a Discord server.
 
-## Features (Planned)
-- Create and join UNO games in a channel
-- Start a game when enough players join
-- Draw / play cards with validation (match color/number/action)
-- Enforce UNO rules:
-  - Reverse, Skip, Draw Two
-  - Wild, Wild Draw Four
-- Turn system + automatic next player
-- Game status display:
-  - Top card, current turn, player list, hand sizes
+## Setup
 
-### In the Server Channel (Public)
-The bot maintains one message in the game channel that shows:
-- The current top card
-- Whose turn it is
-- Player order / number of cards in each hand
+In order to run the bot yourself, follow these steps.
 
-This message updates every turn so everyone can follow the game without spam.
-
-### In Player DMs (Private)
-Each player receives DM updates that show:
-- The top card
-- Your hand
-- What moves you can make (playable cards)
-- Buttons/commands to:
-  - Play a card
-  - Draw a card
-  - End turn (if needed)
-  - UNO call (optional feature)
-
-Players make all moves through DMs so nobody sees your hand.
-
-## Tech Stack
+Requirements:
 - Python 3.10+
 - discord.py
+- dotenv
 
-## Getting Started (Local Dev)
-### 1) Clone your fork
-```bash
+Clone the repository:
+
+```sh
 git clone https://github.com/CSS360-2026-Winter/Daves-Friends.git
 cd Daves-Friends
 ```
 
-### 2) Create a virtual environment
-```bash
-python -m venv .venv
+Create a virtual environment:
+
+```sh
+python3 -m venv .venv
 ```
 
-Activate it:
+Activate the virtual environment:
 
-**Mac/Linux**
+**Unix-like (Linux, MacOS, BSD, etc.)**
 ```bash
 source .venv/bin/activate
 ```
@@ -61,33 +35,53 @@ source .venv/bin/activate
 .venv\Scripts\Activate.ps1
 ```
 
-### 3) Install dependencies
-To install all dependencies and install uno_discord (include the `--editable` flag for the command to update automatically during development).
-```bash
-pip install --editable .
+To install all dependencies and uno_discord, run the following:
+```sh
+pip install .
 ```
 
-### 4) Create your .env
-```bash
-DISCORD_TOKEN=your_token_here
-```
+For development, run `pip install --editable .`.
 
-### 5) Guild ID (Optional)
-For faster slash command updates during development, add this to your .env:
-```bash
+Then copy `.env-sample` to `.env` file and set `DISCORD_TOKEN` to the token you created for your instance of the bot.
+
+For optional faster slash commands during development, specify the `GUILD_ID` in `.env`:
+```env
 GUILD_ID=your_server_id
 ```
-This syncs commands instantly to that server. If not set, commands sync globally and may take longer to appear.
 
-### 6) Running
+This instantly syncs commands to the server. If not set, commands may take longer to appear.
+
 To run the bot, execute `uno_discord`.
-```bash
-uno_discord
-```
 
-### 7) Testing
-First, make sure to install the test dependencies:
-```bash
+## Testing
+
+To test the bot, ensure that you're in the virtual environment and install test dependencies:
+```sh
 pip install --editable .["test"]
 ```
-To run all tests, run `pytest` in the virtual environment.
+
+To run the tests, run `pytest` in the virtual environment. This will run everything except the fuzzer, which can be run with `python3 tests/fuzz.py`.
+
+## Usage
+
+After adding the Uno bot to a Discord server, you can start your own Uno games!
+
+### Lobby
+
+`/create` creates a new lobby and a message displaying information about the lobby.
+
+The lobby message has buttons to "Join", "Leave", "Start Game", or "Disband Game". Only the person who started the lobby can start the game or disband the lobby.
+
+### Game
+
+Once the game has been started, the lobby message updates to display the current game state, including the current player's turn.
+
+On a player's turn, they can choose to play a card or to "Draw Card and Pass".
+
+To play a card, the player can use the `/play <card_index> <color>` command. `card_index` is the index displayed when pressing the "View Cards" button. The color of the card must be chosen when playing a Wild or Plus Four Wild, otherwise it can be omitted.
+
+If a player cannot play a card or merely wishes to skip their turn, they can press "Draw Card and Pass".
+
+If, after playing, a player has only one card left, they should press the "Call Uno" button to declare they only have one card left. If they do not press this button within two seconds, another player may press it and inflict a two card penalty on the player who failed to call uno.
+
+If a player does not play within 60 seconds, their turn is skipped and they draw a card automatically.
