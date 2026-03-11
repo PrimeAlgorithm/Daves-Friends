@@ -227,13 +227,13 @@ class GameState:
             raise GameError("Player not in lobby.")
         self.state["players"].remove(user_id)
         self.state["hands"].pop(user_id, None)
-    
+
     def kick_player(self, user_id: int) -> None:
         """
         Removes a player from the game during play. Adjusts turn order safely.
         """
         players = self.state["players"]
-        
+
         if user_id not in players:
             raise GameError("Player not in game.")
 
@@ -255,7 +255,7 @@ class GameState:
             self.state["turn_index"] -= 1
         elif idx == turn_index:
             self.state["turn_index"] %= len(players)
-        
+
     def add_bot(self) -> None:
         """
         Adds a new bot to the game (with a negative user ID)

@@ -149,10 +149,10 @@ class UnoCog(commands.Cog):
             await user.send(embed=embed)
         except (discord.Forbidden, discord.HTTPException):
             pass
-        
+
     @app_commands.command(name="kick", description="Kick a player from the game.")
     async def kick(self, interaction: discord.Interaction, player: discord.Member):
-
+        """Allows the host to remove a player from the current game."""
         await interaction.response.defer(ephemeral=True)
 
         cid = require_channel_id(interaction)
@@ -200,7 +200,7 @@ class UnoCog(commands.Cog):
             f"{player.display_name} was kicked from the game.",
             ephemeral=True
         )
-                
+
     async def dm_current_player_turn(self, lobby, channel_id: int) -> None:
         """
         DMs the current player when it becomes their turn, including a link to the game.
