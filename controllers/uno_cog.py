@@ -12,7 +12,7 @@ from discord.ext import commands
 from discord.app_commands.errors import CommandInvokeError
 
 from models.deck import Color
-from models.game_state import GameError
+from models.game_state import GameError, Phase
 from repos.lobby_repo import LobbyRepository
 from services.game_service import GameService
 from services.lobby_service import LobbyService
@@ -204,7 +204,7 @@ class UnoCog(commands.Cog):
         Helper to remove a player from the game.
         afk=True changes messages to AFK-specific ones
         """
-        cid = channel_id if channel_id is not None else require_channel_id(None)
+        cid = channel_id
         game = lobby.game
         channel = self.bot.get_channel(cid)
 
@@ -228,9 +228,12 @@ class UnoCog(commands.Cog):
             if channel and afk:
                 await channel.send(f"<@{player_id}> has been kicked for being AFK.")
 
+            if game.phase() == Phase.FINISHED and channel:
+                if channel:
+                    await channel.send(f"Game ended due to a lack of players.")
+
         except GameError as e:
             print (f"Kick Error: {e}")
-
 
     async def dm_current_player_turn(self, lobby, channel_id: int) -> None:
         """
