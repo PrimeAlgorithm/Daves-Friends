@@ -184,7 +184,7 @@ class UnoCog(commands.Cog):
                     title="Player Not Found",
                 )
 
-            self.game_service._kick_player(lobby, player.id)
+            self._kick_player(lobby, player.id)
 
         except GameError as e:
             embed = self._renderer.lobby_views.error_embed(
@@ -197,6 +197,8 @@ class UnoCog(commands.Cog):
             f"{player.display_name} was kicked from the game.", ephemeral=True
         )
 
+    # pylint: disable=protected-access
+    # _kick_player is called _kick_player to differentiate from game_state.py's kick_player
     async def _kick_player(
             self, lobby, player_id: int, afk: bool = False, channel_id: int | None = None
     ):
@@ -218,7 +220,9 @@ class UnoCog(commands.Cog):
             try:
                 user = await self.bot.fetch_user(player_id)
                 if afk:
-                    await user.send("You were kicked from the UNO game for being AFK 5 times.")
+                    await user.send(
+                        "You were kicked from the UNO game for being AFK 5 times."
+                        )
                 else:
                     await user.send("You were kicked from the UNO game.")
             except (discord.Forbidden, discord.HTTPException):
@@ -230,7 +234,7 @@ class UnoCog(commands.Cog):
 
             if game.phase() == Phase.FINISHED and channel:
                 if channel:
-                    await channel.send(f"Game ended due to a lack of players.")
+                    await channel.send("Game ended due to a lack of players.")
 
         except GameError as e:
             print (f"Kick Error: {e}")
