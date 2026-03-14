@@ -10,6 +10,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 from discord.app_commands.errors import CommandInvokeError
+from discord.ui import View
 
 from models.deck import Color
 from models.game_state import GameError, Phase
@@ -68,6 +69,9 @@ class UnoCog(commands.Cog):
         except (CommandInvokeError, discord.errors.Forbidden):
             # Silently fail if we can't ping.
             pass
+
+        lobby.channel_id = cid
+        asyncio.create_task(self.start_solo_lobby_timer(lobby))
 
     @app_commands.command(
         name="play",
@@ -338,6 +342,56 @@ class UnoCog(commands.Cog):
             self.run_afk_timer(channel_id, game.current_player(), game.turn_count())
         )
 
+    async def start_solo_lobby_timer(self, lobby):
+        """
+        Starts a solo lobby timer for a lobby with only one player.
+        Sends a separate countdown embed. Replaces it with a "Lobby expired" embed
+        when timer ends and deletes the main lobby embed.
+        """
+        channel = self.bot.get_channel(lobby.channel_id)
+        if channel is None or not getattr(lobby, "main_message", None):
+            return
+
+        total_sec = 10
+        interval = 1
+
+        try:
+            timer_embed = discord.Embed(
+                title="⏳ Lobby Timer",
+                description=f"Lobby expires in **{total_sec}** seconds if nobody joins.",
+                color=discord.Color.red(),
+            )
+            timer_msg = await channel.send(embed=timer_embed)
+
+            while total_sec > 0:
+                if len(lobby.game.players()) > 1:
+                    await timer_msg.delete()  # remove timer if someone joins
+                    return
+
+                minutes, seconds = divmod(total_sec, 60)
+                timer_embed.description = f"⏳ Lobby expires in **{minutes}:{seconds:02d}** if nobody joins."
+                await timer_msg.edit(embed=timer_embed)
+
+                await asyncio.sleep(interval)
+                total_sec -= interval
+
+            try:
+                main_msg = await channel.fetch_message(lobby.main_message)
+                await main_msg.delete()
+            except (discord.NotFound, discord.HTTPException):
+                pass
+
+            expired_embed = discord.Embed(
+                title="🕒 Lobby Expired",
+                description="The lobby timed out due to inactivity.",
+                color=discord.Color.dark_red(),
+            )
+            await timer_msg.edit(embed=expired_embed)
+
+            self.lobby_service.disband_lobby(lobby.channel_id, lobby.user)
+
+        except Exception as e:
+            print(f"Solo lobby timer error: {e}")
 
 async def setup(bot: commands.Bot) -> None:
     """
