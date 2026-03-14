@@ -356,7 +356,7 @@ class UnoCog(commands.Cog):
 
         timer_embed = discord.Embed(
             title="⏳ Solo Lobby Timer",
-            description="Lobby expires in **10** seconds if nobody joins.",
+            description="Lobby expires in **120** seconds if nobody joins.",
             color=discord.Color.orange(),
         )
 
@@ -365,7 +365,7 @@ class UnoCog(commands.Cog):
         except discord.HTTPException:
             return
 
-        total_sec = 10
+        total_sec = 120
         interval = 1
 
         try:
