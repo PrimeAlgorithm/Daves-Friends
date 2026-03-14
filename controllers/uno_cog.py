@@ -200,7 +200,7 @@ class UnoCog(commands.Cog):
     # pylint: disable=protected-access
     # _kick_player is called _kick_player to differentiate from game_state.py's kick_player
     async def _kick_player(
-            self, lobby, player_id: int, afk: bool = False, channel_id: int | None = None
+        self, lobby, player_id: int, afk: bool = False, channel_id: int | None = None
     ):
         """
         Helper to remove a player from the game.
@@ -222,7 +222,7 @@ class UnoCog(commands.Cog):
                 if afk:
                     await user.send(
                         "You were kicked from the UNO game for being AFK 5 times."
-                        )
+                    )
                 else:
                     await user.send("You were kicked from the UNO game.")
             except (discord.Forbidden, discord.HTTPException):
@@ -237,7 +237,7 @@ class UnoCog(commands.Cog):
                     await channel.send("Game ended due to a lack of players.")
 
         except GameError as e:
-            print (f"Kick Error: {e}")
+            print(f"Kick Error: {e}")
 
     async def dm_current_player_turn(self, lobby, channel_id: int) -> None:
         """
@@ -298,7 +298,9 @@ class UnoCog(commands.Cog):
                 lobby.last_move = {"type": "draw", "player": player_id}
 
                 # increment AFK count
-                game.state["afk_counts"][player_id] = game.state["afk_counts"].get(player_id, 0) + 1
+                game.state["afk_counts"][player_id] = (
+                    game.state["afk_counts"].get(player_id, 0) + 1
+                )
                 afk_count = game.state["afk_counts"][player_id]
 
                 channel = self.bot.get_channel(channel_id)
@@ -309,11 +311,13 @@ class UnoCog(commands.Cog):
 
                     await self._renderer.update_by_message_id(
                         self.bot, channel_id, lobby.main_message, lobby
-                        )
+                    )
 
                 # auto kick if afk 5 times
                 if afk_count >= 5:
-                    await self._kick_player(lobby, player_id, afk=True, channel_id = channel_id)
+                    await self._kick_player(
+                        lobby, player_id, afk=True, channel_id=channel_id
+                    )
                     return
 
             except GameError as e:

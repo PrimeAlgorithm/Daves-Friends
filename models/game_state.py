@@ -129,7 +129,7 @@ class GameState:
             "turn_index": 0,  # index representing which users turn it is
             "turn_count": 0,  # counter representing the current turn #
             "afk_deadline": None,  # AFK timer deadline (UTC datetime)
-            "afk_counts": {}, # track AFK skips
+            "afk_counts": {},  # track AFK skips
             "uno_grace_until": 0.0,  # timestamp when others may start catching
             "uno_vulnerable": None,  # user_id who has 1 card and can be caught
             "direction": Direction.CLOCKWISE,
