@@ -162,7 +162,9 @@ class UnoCog(commands.Cog):
     # pylint: disable=duplicate-code
     @app_commands.command(name="kick", description="Kick a player from the game.")
     async def kick(self, interaction: discord.Interaction, player: discord.Member):
-        """Allows the host to remove a player from the current game."""
+        """
+        Allows the host to remove a player from the current game.
+        """
         await interaction.response.defer(ephemeral=True)
 
         cid = require_channel_id(interaction)
@@ -182,7 +184,7 @@ class UnoCog(commands.Cog):
                     title="Player Not Found",
                 )
 
-            self.game_service.kick_player(cid, player.id)
+            self.game_service._kick_player(lobby, player.id)
 
         except GameError as e:
             embed = self._renderer.lobby_views.error_embed(
@@ -191,18 +193,44 @@ class UnoCog(commands.Cog):
             await interaction.followup.send(embeds=[embed], ephemeral=e.private)
             return
 
-        await self._renderer.update_by_message_id(
-            self.bot, cid, lobby.main_message, lobby
-        )
-
-        try:
-            await player.send("You were kicked from the UNO game.")
-        except (discord.Forbidden, discord.HTTPException):
-            pass
-
         await interaction.followup.send(
             f"{player.display_name} was kicked from the game.", ephemeral=True
         )
+
+    async def _kick_player(
+            self, lobby, player_id: int, afk: bool = False, channel_id: int | None = None
+    ):
+        """
+        Helper to remove a player from the game.
+        afk=True changes messages to AFK-specific ones
+        """
+        cid = channel_id if channel_id is not None else require_channel_id(None)
+        game = lobby.game
+        channel = self.bot.get_channel(cid)
+
+        try:
+            game.kick_player(player_id)
+
+            await self._renderer.update_by_message_id(
+                self.bot, cid, lobby.main_message, lobby
+            )
+
+            try:
+                user = await self.bot.fetch_user(player_id)
+                if afk:
+                    await user.send("You were kicked from the UNO game for being AFK 5 times.")
+                else:
+                    await user.send("You were kicked from the UNO game.")
+            except (discord.Forbidden, discord.HTTPException):
+                pass
+
+            channel = self.bot.get_channel(cid)
+            if channel and afk:
+                await channel.send(f"<@{player_id}> has been kicked for being AFK.")
+
+        except GameError as e:
+            print (f"Kick Error: {e}")
+
 
     async def dm_current_player_turn(self, lobby, channel_id: int) -> None:
         """
@@ -239,6 +267,7 @@ class UnoCog(commands.Cog):
     ):
         """
         Skips a player's turn if they don't play in 60 seconds.
+        Kicks them if they've been AFK 5 times.
         """
         await asyncio.sleep(5)
 
@@ -271,39 +300,19 @@ class UnoCog(commands.Cog):
                         f" <@{player_id}> was AFK. They drew a card and was skipped."
                     )
 
-                    await self._renderer.update_by_message_id(
-                        self.bot,
-                        channel_id,
-                        lobby.main_message,
-                        lobby,
-                    )
+                    await self._renderer.update_by_message_id(self.bot, channel_id, lobby.main_message, lobby)
 
+                # auto kick if afk 5 times
                 if afk_count >= 5:
-                    self.game_service.kick_player(channel_id, player_id)
-
-                    try:
-                        user = await self.bot.fetch_user(player_id)
-                        await user.send(
-                            "You were kicked from the UNO game for being AFK 5 times."
-                        )
-                    except (discord.Forbidden, discord.HTTPException):
-                        pass
-
-                    if channel:
-                        await channel.send(f"<@{player_id}> has been kicked for being AFK for too long.")
-
-                    # disband lobby
-                    if not lobby.game.players():
-                        if channel:
-                            await channel.send("All players were AFK. Game disbanded.")
-                        self.lobby_service.disband_lobby(channel_id, lobby.user)
-                        return
+                    await self._kick_player(lobby, player_id, afk=True, channel_id = channel_id)
+                    return
 
             except GameError as e:
                 print(f"AFK Timer Error: {e}")
 
         # restart timer
-        self.start_afk_timer(channel_id, lobby)
+        if game.phase().name == "PLAYING":
+            self.start_afk_timer(channel_id, lobby)
 
     def start_afk_timer(self, channel_id: int, lobby) -> None:
         """Starts an AFK timer task for the current player."""
