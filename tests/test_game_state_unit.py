@@ -7,7 +7,7 @@ import time
 import pytest
 
 from models.game_state import GameState, GameError, Phase
-from models.deck import Color, Number, Wild
+from models.deck import Color, Number, Reverse, Skip, Wild
 
 
 def test_start_game_requires_two_players():
@@ -36,6 +36,38 @@ def test_start_game_already_started():
         g.start_game()
 
     assert str(e.value) == "Game already started."
+
+
+def test_skip_two_players():
+    """
+    Test skipping a turn when there are only two players.
+    """
+    g = GameState()
+    g.add_player(1)
+    g.add_player(2)
+    g.start_game()
+    g.state["hands"][1] = [Skip(Color.RED)]
+    g.state["discard"] = [Number(Color.RED, 1)]
+
+    assert g.current_player() == 1
+    g.play(1, 0)
+    assert g.current_player() == 1
+
+
+def test_reverse_two_players():
+    """
+    Test reversing direction when there are only two players.
+    """
+    g = GameState()
+    g.add_player(1)
+    g.add_player(2)
+    g.start_game()
+    g.state["hands"][1] = [Reverse(Color.RED)]
+    g.state["discard"] = [Number(Color.RED, 1)]
+
+    assert g.current_player() == 1
+    g.play(1, 0)
+    assert g.current_player() == 1
 
 
 def test_add_player_when_started():
