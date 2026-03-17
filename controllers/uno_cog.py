@@ -190,7 +190,7 @@ class UnoCog(commands.Cog):
                     title="Player Not Found",
                 )
 
-            self._kick_player(lobby, player.id)
+            await self._kick_player(lobby, player.id, channel_id=cid)
 
         except GameError as e:
             embed = self._renderer.lobby_views.error_embed(
@@ -212,9 +212,8 @@ class UnoCog(commands.Cog):
         Helper to remove a player from the game.
         afk=True changes messages to AFK-specific ones
         """
-        cid = channel_id
+        cid = channel_id if channel_id is not None else lobby.channel_id
         game = lobby.game
-        channel = self.bot.get_channel(cid)
 
         try:
             game.kick_player(player_id)
