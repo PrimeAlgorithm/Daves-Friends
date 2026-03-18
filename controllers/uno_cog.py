@@ -430,9 +430,7 @@ class UnoCog(commands.Cog):
                             "and their turn was skipped."
                         )
                     elif len(result.drawn) == 1:
-                        message = (
-                            f" <@{player_id}> was AFK. They drew 1 card and were skipped."
-                        )
+                        message = f" <@{player_id}> was AFK. They drew 1 card and were skipped."
                     else:
                         message = (
                             f" <@{player_id}> was AFK. They drew {len(result.drawn)} cards "

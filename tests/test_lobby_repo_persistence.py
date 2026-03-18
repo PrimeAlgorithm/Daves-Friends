@@ -55,7 +55,11 @@ def test_lobby_state_is_restored_from_local_file(tmp_path):
     assert reloaded_lobby.game.phase() == Phase.PLAYING
     assert reloaded_lobby.game.players() == [1, 2]
     assert len(reloaded_lobby.game.hand(current_player)) == 8
-    assert reloaded_lobby.last_move == {"type": "draw", "player": current_player}
+    assert reloaded_lobby.last_move == {
+        "type": "draw",
+        "player": current_player,
+        "count": 1,
+    }
 
 
 def test_deleted_lobbies_are_removed_from_local_file(tmp_path):
