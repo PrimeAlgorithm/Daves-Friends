@@ -55,6 +55,12 @@ class LobbyRepository:
             if not hasattr(lobby, "last_move"):
                 lobby.last_move = None
 
+            if not hasattr(lobby, "solo_timer_message"):
+                lobby.solo_timer_message = None
+
+            if not hasattr(lobby, "solo_expires_at"):
+                lobby.solo_expires_at = None
+
             lobbies[int(lobby_id)] = lobby
 
         return lobbies

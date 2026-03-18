@@ -36,7 +36,10 @@ class LobbyService:
                 self._lobby_repo.delete(channel_id)
             else:
                 raise GameError(
-                    "A lobby already exists in this channel. Join this lobby or skedaddle!",
+                    (
+                        "A saved lobby already exists in this channel. "
+                        "Continue it or disband it first."
+                    ),
                     private=True,
                     title="Lobby Exists",
                 )

@@ -2,22 +2,21 @@
 Tests local file persistence for lobby and game state.
 """
 
+from datetime import datetime, timedelta, timezone
+from types import SimpleNamespace
+
 from services.game_service import GameService
 from services.lobby_service import LobbyService
 from repos.lobby_repo import LobbyRepository
 from models.game_state import Phase
 
 
-class _FakeAvatar:
-    def __init__(self, url: str):
-        self.url = url
-
-
-class _FakeUser:
-    def __init__(self, user_id: int, name: str):
-        self.id = user_id
-        self.name = name
-        self.display_avatar = _FakeAvatar(f"https://example.com/{user_id}.png")
+def _fake_user(user_id: int, name: str) -> SimpleNamespace:
+    return SimpleNamespace(
+        id=user_id,
+        name=name,
+        display_avatar=SimpleNamespace(url=f"https://example.com/{user_id}.png"),
+    )
 
 
 def test_lobby_state_is_restored_from_local_file(tmp_path):
@@ -29,11 +28,13 @@ def test_lobby_state_is_restored_from_local_file(tmp_path):
     lobby_service = LobbyService(repo)
     game_service = GameService(lobby_service)
 
-    host = _FakeUser(1, "Host")
-    guest = _FakeUser(2, "Guest")
+    host = _fake_user(1, "Host")
+    guest = _fake_user(2, "Guest")
 
     lobby = lobby_service.create_lobby(12345, host)
     lobby.main_message = 67890
+    lobby.solo_timer_message = 13579
+    lobby.solo_expires_at = datetime.now(timezone.utc) + timedelta(seconds=45)
     lobby_service.save()
 
     lobby_service.join_lobby(12345, guest)
@@ -49,6 +50,8 @@ def test_lobby_state_is_restored_from_local_file(tmp_path):
     assert reloaded_lobby.user.name == host.name
     assert reloaded_lobby.main_message == 67890
     assert reloaded_lobby.channel_id == 12345
+    assert reloaded_lobby.solo_timer_message == 13579
+    assert reloaded_lobby.solo_expires_at is not None
     assert reloaded_lobby.game.phase() == Phase.PLAYING
     assert reloaded_lobby.game.players() == [1, 2]
     assert len(reloaded_lobby.game.hand(current_player)) == 8
@@ -63,7 +66,7 @@ def test_deleted_lobbies_are_removed_from_local_file(tmp_path):
     repo = LobbyRepository(storage_path=storage_path)
     lobby_service = LobbyService(repo)
 
-    lobby_service.create_lobby(222, _FakeUser(10, "Host"))
+    lobby_service.create_lobby(222, _fake_user(10, "Host"))
     repo.delete(222)
 
     reloaded_repo = LobbyRepository(storage_path=storage_path)

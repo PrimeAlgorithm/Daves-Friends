@@ -2,6 +2,7 @@
 Provides a model to represent a lobby.
 """
 
+from datetime import datetime
 from dataclasses import dataclass
 from typing import Any
 
@@ -58,3 +59,5 @@ class Lobby:
     main_message: int | None
     channel_id: int | None = None
     last_move: Any | None = None
+    solo_timer_message: int | None = None
+    solo_expires_at: datetime | None = None

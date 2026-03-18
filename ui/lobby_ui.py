@@ -30,7 +30,11 @@ class LobbyUI(Interactions):
         self.lobby_service = lobby_service
         self.lobby_views = lobby_views
 
-    @discord.ui.button(label="🌟 Join", style=discord.ButtonStyle.blurple)
+    @discord.ui.button(
+        label="🌟 Join",
+        style=discord.ButtonStyle.blurple,
+        custom_id="lobby:join",
+    )
     async def join(
         self, interaction: discord.Interaction, _button: discord.ui.Button
     ) -> None:
@@ -49,7 +53,11 @@ class LobbyUI(Interactions):
         lobby = self.lobby_service.get_lobby(cid)
         await self._renderer.update_from_interaction(interaction, lobby)
 
-    @discord.ui.button(label="🚫 Leave", style=discord.ButtonStyle.gray)
+    @discord.ui.button(
+        label="🚫 Leave",
+        style=discord.ButtonStyle.gray,
+        custom_id="lobby:leave",
+    )
     async def leave(
         self, interaction: discord.Interaction, _button: discord.ui.Button
     ) -> None:
@@ -74,7 +82,11 @@ class LobbyUI(Interactions):
 
         await self._renderer.update_from_interaction(interaction, lobby)
 
-    @discord.ui.button(label="🚀 Start Game", style=discord.ButtonStyle.success)
+    @discord.ui.button(
+        label="🚀 Start Game",
+        style=discord.ButtonStyle.success,
+        custom_id="lobby:start",
+    )
     async def start(
         self, interaction: discord.Interaction, _button: discord.ui.Button
     ) -> None:
@@ -90,7 +102,7 @@ class LobbyUI(Interactions):
                 "Must be host",
                 "You must be the host in order to start the game!",
             )
-            await interaction.followup.send(embeds=[embed], ephemeral=True)
+            await interaction.response.send_message(embeds=[embed], ephemeral=True)
             return
 
         self.lobby_service.start_lobby(cid)
@@ -118,7 +130,11 @@ class LobbyUI(Interactions):
         if cog:
             cog.start_afk_timer(cid, lobby)
 
-    @discord.ui.button(label="🚨 Disband Game", style=discord.ButtonStyle.danger)
+    @discord.ui.button(
+        label="🚨 Disband Game",
+        style=discord.ButtonStyle.danger,
+        custom_id="lobby:disband",
+    )
     async def disband(
         self, interaction: discord.Interaction, _button: discord.ui.Button
     ) -> None:

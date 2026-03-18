@@ -80,7 +80,12 @@ class BaseViews:
             str(error),
         )
 
-        await interaction.followup.send(embeds=[embed], ephemeral=error.private)
+        if interaction.response.is_done():
+            await interaction.followup.send(embeds=[embed], ephemeral=error.private)
+        else:
+            await interaction.response.send_message(
+                embeds=[embed], ephemeral=error.private
+            )
 
     # pylint: disable=too-many-arguments
     # pylint: disable=too-many-positional-arguments
