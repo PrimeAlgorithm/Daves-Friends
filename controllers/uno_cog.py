@@ -5,11 +5,12 @@ Provides the Discord commands and high-level validation of them.
 from __future__ import annotations
 
 import asyncio
+from datetime import datetime, timedelta, timezone
 
 import discord
 from discord import app_commands
-from discord.ext import commands
 from discord.app_commands.errors import CommandInvokeError
+from discord.ext import commands
 
 from models.deck import Color
 from models.game_state import GameError, Phase
@@ -42,6 +43,113 @@ class UnoCog(commands.Cog):
 
         # Solo timer
         self._solo_lobby_timers: dict[int, asyncio.Task] = {}
+        self._afk_timers: dict[int, asyncio.Task] = {}
+
+    async def restore_persisted_lobbies(self) -> None:
+        """
+        Rehydrates saved lobbies after the bot reconnects.
+        """
+        await self.bot.wait_until_ready()
+
+        for channel_id, lobby in list(self.lobby_repo.lobbies.items()):
+            if not await self._restore_lobby(channel_id, lobby):
+                self.lobby_repo.delete(channel_id)
+
+    async def _restore_lobby(self, channel_id: int, lobby) -> bool:
+        """
+        Restores one saved lobby, returning False if it is stale and should be deleted.
+        """
+        if lobby.main_message is None or lobby.channel_id is None:
+            return False
+
+        if lobby.game.phase() == Phase.LOBBY:
+            try:
+                await self._renderer.update_by_message_id(
+                    self.bot, channel_id, lobby.main_message, lobby
+                )
+            except (discord.NotFound, discord.Forbidden, discord.HTTPException):
+                return False
+
+            if len(lobby.game.players()) <= 1:
+                self.restart_solo_lobby_timer(lobby, reset_deadline=False)
+            else:
+                await self._clear_solo_timer_message(lobby)
+            await self._send_restore_notice(lobby)
+            return True
+
+        await self._clear_solo_timer_message(lobby)
+
+        if lobby.game.phase() == Phase.PLAYING:
+            self._reset_restored_turn_timer(lobby)
+
+        try:
+            await self._renderer.update_by_message_id(
+                self.bot, channel_id, lobby.main_message, lobby
+            )
+        except (discord.NotFound, discord.Forbidden, discord.HTTPException):
+            return False
+
+        if lobby.game.phase() == Phase.PLAYING:
+            self.start_afk_timer(channel_id, lobby)
+
+        await self._send_restore_notice(lobby)
+        return True
+
+    async def _get_channel(self, channel_id: int | None):
+        """
+        Gets a Discord channel from cache or the API.
+        """
+        if channel_id is None:
+            return None
+
+        channel = self.bot.get_channel(channel_id)
+        if channel is not None:
+            return channel
+
+        try:
+            return await self.bot.fetch_channel(channel_id)
+        except (discord.NotFound, discord.Forbidden, discord.HTTPException):
+            return None
+
+    async def _send_restore_notice(self, lobby) -> None:
+        """
+        Notifies the channel when a saved lobby or game has been restored.
+        """
+        channel = await self._get_channel(lobby.channel_id)
+        if channel is None:
+            return
+
+        if lobby.game.phase() == Phase.LOBBY:
+            message = "Lobby reinstated. Saved state restored after the bot restarted."
+        elif lobby.game.phase() == Phase.PLAYING:
+            message = "Game reinstated. Saved state restored after the bot restarted."
+        else:
+            message = "Saved state restored after the bot restarted."
+
+        try:
+            await channel.send(message)
+        except (discord.NotFound, discord.Forbidden, discord.HTTPException):
+            pass
+
+    @staticmethod
+    def _normalize_utc(dt_value: datetime | None) -> datetime | None:
+        """
+        Ensures a datetime is timezone-aware in UTC.
+        """
+        if dt_value is None:
+            return None
+        if dt_value.tzinfo is None:
+            return dt_value.replace(tzinfo=timezone.utc)
+        return dt_value.astimezone(timezone.utc)
+
+    def _reset_restored_turn_timer(self, lobby) -> None:
+        """
+        Gives the current player a fresh AFK window after a bot restart.
+        """
+        lobby.game.state["afk_deadline"] = datetime.now(timezone.utc) + timedelta(
+            seconds=60
+        )
+        self.lobby_service.save()
 
     @app_commands.command(name="create", description="Create a lobby in this channel.")
     async def create(self, interaction: discord.Interaction) -> None:
@@ -73,7 +181,8 @@ class UnoCog(commands.Cog):
             pass
 
         lobby.channel_id = cid
-        asyncio.create_task(self.start_solo_lobby_timer(lobby))
+        self.lobby_service.save()
+        self.restart_solo_lobby_timer(lobby, reset_deadline=True)
 
     @app_commands.command(
         name="play",
@@ -117,15 +226,12 @@ class UnoCog(commands.Cog):
                     private=True,
                 )
 
-            result = self.game_service.play_card(
+            self.game_service.play_card(
                 cid,
                 interaction.user.id,
                 card_index,
                 Color[color.value.upper()] if color else None,
             )
-
-            # store last move so the embed can show it
-            lobby.last_move = result
 
         except GameError as e:
             embed = self._renderer.lobby_views.error_embed(
@@ -210,7 +316,7 @@ class UnoCog(commands.Cog):
         game = lobby.game
 
         try:
-            game.kick_player(player_id)
+            self.game_service.kick_player(cid, player_id)
 
             await self._renderer.update_by_message_id(
                 self.bot, cid, lobby.main_message, lobby
@@ -269,13 +375,17 @@ class UnoCog(commands.Cog):
             pass
 
     async def run_afk_timer(
-        self, channel_id: int, player_id: int, start_turn_count: int
+        self,
+        channel_id: int,
+        player_id: int,
+        start_turn_count: int,
+        delay_seconds: float,
     ):
         """
         Skips a player's turn if they don't play in 60 seconds.
         Kicks them if they've been AFK 5 times.
         """
-        await asyncio.sleep(60)
+        await asyncio.sleep(max(delay_seconds, 0))
 
         try:
             lobby = self.lobby_service.get_lobby(channel_id)
@@ -305,6 +415,7 @@ class UnoCog(commands.Cog):
                     game.state["afk_counts"].get(player_id, 0) + 1
                 )
                 afk_count = game.state["afk_counts"][player_id]
+                self.lobby_service.save()
 
                 channel = self.bot.get_channel(channel_id)
                 if channel and afk_count <= 4:
@@ -352,9 +463,108 @@ class UnoCog(commands.Cog):
         if game.phase().name != "PLAYING":
             return
 
-        asyncio.create_task(
-            self.run_afk_timer(channel_id, game.current_player(), game.turn_count())
+        existing = self._afk_timers.get(channel_id)
+        if existing and not existing.done():
+            existing.cancel()
+
+        deadline = game.afk_deadline()
+        delay_seconds = 60.0
+        if deadline is not None:
+            deadline = self._normalize_utc(deadline)
+            delay_seconds = max(
+                (deadline - datetime.now(timezone.utc)).total_seconds(),
+                0.0,
+            )
+
+        self._afk_timers[channel_id] = asyncio.create_task(
+            self.run_afk_timer(
+                channel_id,
+                game.current_player(),
+                game.turn_count(),
+                delay_seconds,
+            )
         )
+
+    async def _clear_solo_timer_message(self, lobby, clear_deadline: bool = True):
+        """
+        Deletes the countdown message for a solo lobby if one exists.
+        """
+        channel = await self._get_channel(lobby.channel_id)
+
+        if channel is not None and lobby.solo_timer_message is not None:
+            try:
+                timer_msg = await channel.fetch_message(lobby.solo_timer_message)
+                await timer_msg.delete()
+            except (discord.NotFound, discord.Forbidden, discord.HTTPException):
+                pass
+
+        lobby.solo_timer_message = None
+        if clear_deadline:
+            lobby.solo_expires_at = None
+        self.lobby_service.save()
+
+    async def _get_or_create_solo_timer_message(self, lobby):
+        """
+        Fetches the solo timer message, or creates it if missing.
+        """
+        channel = await self._get_channel(lobby.channel_id)
+        if channel is None:
+            return None
+
+        if lobby.solo_timer_message is not None:
+            try:
+                return await channel.fetch_message(lobby.solo_timer_message)
+            except (discord.NotFound, discord.Forbidden, discord.HTTPException):
+                lobby.solo_timer_message = None
+                self.lobby_service.save()
+
+        timer_msg = await channel.send(
+            embed=discord.Embed(
+                title="⏳ Solo Lobby Timer",
+                description="Lobby expires in **120** seconds if nobody joins.",
+                color=discord.Color.orange(),
+            )
+        )
+        lobby.solo_timer_message = timer_msg.id
+        self.lobby_service.save()
+        return timer_msg
+
+    async def _run_solo_timer_tick(self, lobby, timer_msg):
+        """
+        Updates the solo timer once and returns the next action to take.
+        """
+        if len(lobby.game.players()) > 1 or lobby.game.phase() != Phase.LOBBY:
+            await self._clear_solo_timer_message(lobby)
+            return timer_msg, "stop"
+
+        if lobby.solo_expires_at is None:
+            lobby.solo_expires_at = datetime.now(timezone.utc) + timedelta(seconds=120)
+            self.lobby_service.save()
+
+        lobby.solo_expires_at = self._normalize_utc(lobby.solo_expires_at)
+        remaining = int(
+            (lobby.solo_expires_at - datetime.now(timezone.utc)).total_seconds()
+        )
+
+        if remaining <= 0:
+            return timer_msg, "expire"
+
+        minutes, seconds = divmod(remaining, 60)
+        timer_embed = discord.Embed(
+            title="⏳ Solo Lobby Timer",
+            description=f"Lobby expires in **{minutes}:{seconds:02d}** if nobody joins.",
+            color=discord.Color.orange(),
+        )
+
+        try:
+            await timer_msg.edit(embed=timer_embed)
+        except (discord.NotFound, discord.Forbidden, discord.HTTPException):
+            timer_msg = await self._get_or_create_solo_timer_message(lobby)
+            if timer_msg is None:
+                return None, "stop"
+
+        await asyncio.sleep(1)
+        return timer_msg, "continue"
 
     async def start_solo_lobby_timer(self, lobby):
         """
@@ -362,47 +572,43 @@ class UnoCog(commands.Cog):
         Sends a separate countdown embed. Replaces it with a "Lobby expired" embed
         when timer ends and deletes the main lobby embed.
         """
-        channel = self.bot.get_channel(lobby.channel_id)
-        if channel is None or not getattr(lobby, "main_message", None):
+        if (
+            lobby.channel_id is None
+            or not getattr(lobby, "main_message", None)
+            or lobby.game.phase() != Phase.LOBBY
+        ):
             return
 
-        timer_embed = discord.Embed(
-            title="⏳ Solo Lobby Timer",
-            description="Lobby expires in **120** seconds if nobody joins.",
-            color=discord.Color.orange(),
-        )
-
         try:
-            timer_msg = await channel.send(embed=timer_embed)
-        except discord.HTTPException:
+            timer_msg = await self._get_or_create_solo_timer_message(lobby)
+        except (discord.Forbidden, discord.HTTPException):
             return
 
-        total_sec = 120
-        interval = 1
+        if timer_msg is None:
+            return
 
         try:
-            while total_sec > 0:
-                if len(lobby.game.players()) > 1:
-                    await timer_msg.delete()
-                    return
-
-                minutes, seconds = divmod(total_sec, 60)
-                timer_embed.description = (
-                    f"Lobby expires in **{minutes}:{seconds:02d}** if nobody joins."
+            while True:
+                timer_msg, next_action = await self._run_solo_timer_tick(
+                    lobby, timer_msg
                 )
+                if next_action == "continue":
+                    continue
+                if next_action == "stop":
+                    return
+                break
 
-                try:
-                    await timer_msg.edit(embed=timer_embed)
-                except discord.HTTPException:
-                    pass
-
-                await asyncio.sleep(interval)
-                total_sec -= interval
+            channel = await self._get_channel(lobby.channel_id)
+            if channel is None:
+                return
 
             self.lobby_service.disband_lobby(lobby.channel_id, lobby.user)
 
-            timer_embed.title = "🕒 Lobby Expired"
-            timer_embed.description = "The solo lobby has expired due to inactivity."
+            timer_embed = discord.Embed(
+                title="🕒 Lobby Expired",
+                description="The solo lobby has expired due to inactivity.",
+                color=discord.Color.orange(),
+            )
             try:
                 await timer_msg.edit(embed=timer_embed)
             except discord.HTTPException:
@@ -415,15 +621,13 @@ class UnoCog(commands.Cog):
                 pass
 
         except asyncio.CancelledError:
-            try:
-                await timer_msg.delete()
-            except discord.HTTPException:
-                pass
+            await self._clear_solo_timer_message(lobby)
+            raise
 
         except (discord.HTTPException, discord.Forbidden, GameError) as e:
             print(f"Solo lobby timer error: {e}")
 
-    def restart_solo_lobby_timer(self, lobby):
+    def restart_solo_lobby_timer(self, lobby, reset_deadline: bool = True):
         """
         Starts the solo timer if there's 1 player, cancels it otherwise.
         """
@@ -433,10 +637,19 @@ class UnoCog(commands.Cog):
         if task and not task.done():
             task.cancel()
 
-        if len(lobby.game.players()) == 1:
+        if len(lobby.game.players()) == 1 and lobby.game.phase() == Phase.LOBBY:
+            if reset_deadline or lobby.solo_expires_at is None:
+                lobby.solo_expires_at = datetime.now(timezone.utc) + timedelta(
+                    seconds=120
+                )
+            else:
+                lobby.solo_expires_at = self._normalize_utc(lobby.solo_expires_at)
+            self.lobby_service.save()
             self._solo_lobby_timers[cid] = asyncio.create_task(
                 self.start_solo_lobby_timer(lobby)
             )
+        else:
+            asyncio.create_task(self._clear_solo_timer_message(lobby))
 
 
 async def setup(bot: commands.Bot) -> None:
@@ -444,4 +657,6 @@ async def setup(bot: commands.Bot) -> None:
     Adds a new instance of UnoCog to the bot.
     """
 
-    await bot.add_cog(UnoCog(bot))
+    cog = UnoCog(bot)
+    await bot.add_cog(cog)
+    await cog.restore_persisted_lobbies()

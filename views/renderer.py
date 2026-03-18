@@ -36,6 +36,21 @@ class Renderer:
         self.lobby_service = lobby_service
         self.game_service = game_service
 
+    def view_for_lobby(self, lobby: Lobby) -> Interactions:
+        """
+        Builds the appropriate interactive view for a lobby's current phase.
+        """
+        if lobby.game.phase() == Phase.LOBBY:
+            return LobbyUI(self, self.lobby_service, self.lobby_views)
+
+        if lobby.game.phase() == Phase.PLAYING:
+            return GameUI(self, lobby, self.game_service)
+
+        if lobby.game.phase() == Phase.FINISHED:
+            return EndUI()
+
+        raise RuntimeError("Unknown phase")
+
     async def render(
         self, lobby: Lobby
     ) -> tuple[list[discord.Embed], Interactions, list[discord.File]]:
@@ -45,18 +60,15 @@ class Renderer:
 
         if lobby.game.phase() == Phase.LOBBY:
             embed = self.lobby_views.lobby_embed(lobby)
-            views = LobbyUI(self, self.lobby_service, self.lobby_views)
-            return [embed], views, []
+            return [embed], self.view_for_lobby(lobby), []
 
         if lobby.game.phase() == Phase.PLAYING:
             embed, file = self.game_views.game_embed(lobby)
-            views = GameUI(self, lobby, self.game_service)
-            return [embed], views, [file] if file else []
+            return [embed], self.view_for_lobby(lobby), [file] if file else []
 
         if lobby.game.phase() == Phase.FINISHED:
             embed = self.end_views.end_embed(lobby)
-            views = EndUI()
-            return [embed], views, []
+            return [embed], self.view_for_lobby(lobby), []
 
         raise RuntimeError("Unknown phase")
 

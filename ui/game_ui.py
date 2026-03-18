@@ -28,7 +28,11 @@ class GameUI(Interactions):
         self.lobby: Lobby = lobby
         self.game_service: GameService = game_service
 
-    @discord.ui.button(label="1️⃣ Call Uno", style=discord.ButtonStyle.success)
+    @discord.ui.button(
+        label="1️⃣ Call Uno",
+        style=discord.ButtonStyle.success,
+        custom_id="game:call_uno",
+    )
     async def call_uno(
         self, interaction: discord.Interaction, _button: discord.ui.Button
     ) -> None:
@@ -88,7 +92,11 @@ class GameUI(Interactions):
             case _:
                 await interaction.followup.send("Unhandled UNO result.", ephemeral=True)
 
-    @discord.ui.button(label="👀 View Cards", style=discord.ButtonStyle.blurple)
+    @discord.ui.button(
+        label="👀 View Cards",
+        style=discord.ButtonStyle.blurple,
+        custom_id="game:view_cards",
+    )
     async def view_cards(
         self, interaction: discord.Interaction, _button: discord.ui.Button
     ) -> None:
@@ -115,7 +123,11 @@ class GameUI(Interactions):
         embed = self._renderer.hand_views.hand_embed(hand)
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
-    @discord.ui.button(label="🃏 Draw Card and Pass", style=discord.ButtonStyle.gray)
+    @discord.ui.button(
+        label="🃏 Draw Card and Pass",
+        style=discord.ButtonStyle.gray,
+        custom_id="game:draw_and_pass",
+    )
     async def draw_card_and_pass(
         self, interaction: discord.Interaction, _button: discord.ui.Button
     ) -> None:
@@ -125,15 +137,7 @@ class GameUI(Interactions):
         """
 
         try:
-            result = self.game_service.draw(interaction.channel_id, interaction.user.id)
-
-            # record draw as last move so the embed can show it
-            self.lobby.last_move = {
-                "type": "draw",
-                "player": interaction.user.id,
-                "count": len(result.drawn),
-            }
-
+            self.game_service.draw(interaction.channel_id, interaction.user.id)
         except GameError as e:
             embed = self._renderer.lobby_views.error_embed(
                 "Not your turn!" if e.title == "" else e.title, str(e)
@@ -149,7 +153,11 @@ class GameUI(Interactions):
             await cog.dm_current_player_turn(self.lobby, interaction.channel_id)
             cog.start_afk_timer(interaction.channel_id, self.lobby)
 
-    @discord.ui.button(label="🛑 End Game", style=discord.ButtonStyle.danger)
+    @discord.ui.button(
+        label="🛑 End Game",
+        style=discord.ButtonStyle.danger,
+        custom_id="game:end",
+    )
     async def end_game(
         self, interaction: discord.Interaction, _button: discord.ui.Button
     ) -> None:

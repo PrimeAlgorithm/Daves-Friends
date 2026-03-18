@@ -36,6 +36,8 @@ class GameService:
         ):
             lobby.game.play_bot()
 
+        lobby.last_move = result
+        self.lobby_service.save()
         return result
 
     def draw(self, channel_id: int, user_id: int):
@@ -44,14 +46,23 @@ class GameService:
         """
 
         lobby = self.lobby_service.get_lobby(channel_id)
-        return lobby.game.draw_and_pass(user_id)
+        result = lobby.game.draw_and_pass(user_id)
+        lobby.last_move = {
+            "type": "draw",
+            "player": user_id,
+            "count": len(result.drawn),
+        }
+        self.lobby_service.save()
+        return result
 
     def call_uno(self, channel_id: int, caller_id: int) -> dict[str, Any]:
         """
         Instructs the game to process a Call UNO button press.
         """
         lobby = self.lobby_service.get_lobby(channel_id)
-        return lobby.game.call_uno(caller_id)
+        result = lobby.game.call_uno(caller_id)
+        self.lobby_service.save()
+        return result
 
     def end_game(self, channel_id: int) -> None:
         """
@@ -59,6 +70,8 @@ class GameService:
         """
         lobby = self.lobby_service.get_lobby(channel_id)
         lobby.game.reset()
+        lobby.last_move = None
+        self.lobby_service.save()
 
     def delete_game(self, channel_id: int, caller: User) -> None:
         """
@@ -72,3 +85,4 @@ class GameService:
         """
         lobby = self.lobby_service.get_lobby(channel_id)
         lobby.game.kick_player(target_id)
+        self.lobby_service.save()

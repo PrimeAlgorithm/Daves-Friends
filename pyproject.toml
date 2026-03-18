@@ -2,7 +2,7 @@
 requires-python = ">=3.10"
 name = "uno_discord"
 version = "1.0"
-dependencies = ["discord", "dotenv", "pytest"]
+dependencies = ["discord", "dotenv"]
 
 [project.optional-dependencies]
 test = [
@@ -10,10 +10,11 @@ test = [
     "black",
     "pylint",
 ]
-fuzz = [
-    "atheris",
-]
+fuzz = ["atheris"]
 
 [tool.setuptools]
 packages = ["controllers", "models", "ui", "utils", "repos", "services", "tests", "views"]
 py-modules = ["__init__"]
+
+[tool.black]
+target-version = ["py310"]

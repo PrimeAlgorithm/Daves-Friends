@@ -80,7 +80,12 @@ class BaseViews:
             str(error),
         )
 
-        await interaction.followup.send(embeds=[embed], ephemeral=error.private)
+        if interaction.response.is_done():
+            await interaction.followup.send(embeds=[embed], ephemeral=error.private)
+        else:
+            await interaction.response.send_message(
+                embeds=[embed], ephemeral=error.private
+            )
 
     # pylint: disable=too-many-arguments
     # pylint: disable=too-many-positional-arguments
@@ -115,6 +120,12 @@ class BaseViews:
             embed.set_image(url=self.get_random_gif())
 
         if author:
-            embed.set_author(name=author.name, icon_url=author.display_avatar.url)
+            avatar = getattr(author, "display_avatar", None)
+            avatar_url = getattr(avatar, "url", None)
+
+            if avatar_url:
+                embed.set_author(name=author.name, icon_url=avatar_url)
+            else:
+                embed.set_author(name=author.name)
 
         return embed
