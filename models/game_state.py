@@ -29,7 +29,7 @@ class Phase(Enum):
     """
     The current phase of the game. LOBBY is before the game starts and when players can join.
     PLAYING is when the game is being played and players can play cards. FINISHED is when the game
-    has ended and a winner has been declared.
+    has ended.
     """
 
     LOBBY = auto()
@@ -107,6 +107,7 @@ def _deal_starting_hands(
     return hands
 
 
+# pylint: disable=too-many-public-methods
 class GameState:
     """
     The main GameState that describes operation of the Uno game at a fundamental level. Stores
@@ -134,6 +135,7 @@ class GameState:
             "uno_vulnerable": None,  # user_id who has 1 card and can be caught
             "direction": Direction.CLOCKWISE,
             "winner": None,
+            "ended_in_draw": False,
         }
 
     def reset(self) -> None:
@@ -201,6 +203,12 @@ class GameState:
         """
         return self.state["uno_vulnerable"]
 
+    def ended_in_draw(self) -> bool:
+        """
+        Returns whether the current game ended in a draw.
+        """
+        return self.state["ended_in_draw"]
+
     def uno_grace_active(self) -> bool:
         """
         Returns whether or not the grace period for catching someone for not calling Uno is active.
@@ -254,6 +262,7 @@ class GameState:
         # If only one player remains, end the game
         if len(players) <= 1:
             self.state["phase"] = Phase.FINISHED
+            self.state["ended_in_draw"] = False
             if players:
                 self.state["winner"] = players[0]
             return
@@ -300,6 +309,7 @@ class GameState:
         self.state["turn_index"] = 0
         self.state["direction"] = Direction.CLOCKWISE
         self.state["winner"] = None
+        self.state["ended_in_draw"] = False
         self.state["phase"] = Phase.PLAYING
         self._set_afk_deadline(60)
 
@@ -369,6 +379,7 @@ class GameState:
             self._clear_uno()
             self.state["phase"] = Phase.FINISHED
             self.state["winner"] = user_id
+            self.state["ended_in_draw"] = False
             res.winner = user_id
             return res
 
@@ -409,23 +420,21 @@ class GameState:
         if amt <= 0:
             raise GameError("Amt must be >= 1.", title="Invalid Amount", private=True)
 
-        draw_pile: list[Card] = self.state["deck"]
-        discard_pile: list[Card] = self.state["discard"]
         hand: list[Card] = self.state["hands"][user_id]
 
-        drawn: list[Card] = []
-        for _ in range(amt):
-            c = self._draw_one(draw_pile, discard_pile)
-            hand.append(c)
-            drawn.append(c)
+        drawn = self._draw_many_to(user_id, amt)
 
-        if self.state["uno_vulnerable"] == user_id:
+        if self.state["uno_vulnerable"] == user_id and len(hand) != 1:
             self._clear_uno()
 
-        self._advance_turn(steps=1)
-        return DrawResult(
-            user_id=user_id, drawn=drawn, next_player=self.current_player()
-        )
+        next_player = user_id
+        if not drawn and not self._any_playable_cards():
+            self._finish_as_draw()
+        else:
+            self._advance_turn(steps=1)
+            next_player = self.current_player()
+
+        return DrawResult(user_id=user_id, drawn=drawn, next_player=next_player)
 
     def _draw_first_valid_start_card(
         self, draw_pile: list[Card], discard_pile: list[Card]
@@ -478,15 +487,15 @@ class GameState:
 
             case DrawTwo(_):
                 target = self._peek_next_player_id()
-                self._draw_many_to(target, 2)
-                res.drew_cards[target] = 2
+                drawn = self._draw_many_to(target, 2)
+                res.drew_cards[target] = len(drawn)
                 res.skipped = True
                 self._advance_turn(steps=2)
 
             case DrawFourWild(_):
                 target = self._peek_next_player_id()
-                self._draw_many_to(target, 4)
-                res.drew_cards[target] = 4
+                drawn = self._draw_many_to(target, 4)
+                res.drew_cards[target] = len(drawn)
                 res.skipped = True
                 self._advance_turn(steps=2)
 
@@ -519,9 +528,9 @@ class GameState:
         next_idx = (idx + self._dir_sign()) % n
         return players[next_idx]
 
-    def _draw_many_to(self, user_id: int, count: int) -> None:
+    def _draw_many_to(self, user_id: int, count: int) -> list[Card]:
         if count <= 0:
-            return
+            return []
         if user_id not in self.state["hands"]:
             raise GameError("Target player not found.")
 
@@ -529,15 +538,22 @@ class GameState:
         discard_pile: list[Card] = self.state["discard"]
         hand: list[Card] = self.state["hands"][user_id]
 
+        drawn: list[Card] = []
         for _ in range(count):
-            hand.append(self._draw_one(draw_pile, discard_pile))
+            card = self._draw_one(draw_pile, discard_pile)
+            if card is None:
+                break
+            hand.append(card)
+            drawn.append(card)
 
-    def _draw_one(self, draw_pile: list[Card], discard_pile: list[Card]) -> Card:
+        return drawn
+
+    def _draw_one(self, draw_pile: list[Card], discard_pile: list[Card]) -> Card | None:
         if draw_pile:
             return draw_pile.pop()
 
         if len(discard_pile) <= 1:
-            raise GameError("No cards left to draw.")
+            return None
 
         top = discard_pile[-1]
         refill = discard_pile[:-1]
@@ -551,7 +567,25 @@ class GameState:
         self._rng.shuffle(refill)
         draw_pile.extend(refill)
 
-        return draw_pile.pop()
+        return draw_pile.pop() if draw_pile else None
+
+    def _any_playable_cards(self) -> bool:
+        top = self.top_card()
+        if top is None:
+            return False
+
+        for hand in self.state["hands"].values():
+            for card in hand:
+                if can_play_card(top, card):
+                    return True
+
+        return False
+
+    def _finish_as_draw(self) -> None:
+        self._clear_uno()
+        self.state["phase"] = Phase.FINISHED
+        self.state["winner"] = None
+        self.state["ended_in_draw"] = True
 
     def _dir_sign(self) -> int:
         return 1 if self.state["direction"] == Direction.CLOCKWISE else -1
@@ -600,6 +634,11 @@ class GameState:
         if self._now() < self.state["uno_grace_until"]:
             return {"result": "too_early", "target": target, "caller": caller_id}
 
-        self._draw_many_to(target, 2)
+        drawn = self._draw_many_to(target, 2)
         self._clear_uno()
-        return {"result": "penalty", "target": target, "caller": caller_id}
+        return {
+            "result": "penalty",
+            "target": target,
+            "caller": caller_id,
+            "drawn_count": len(drawn),
+        }

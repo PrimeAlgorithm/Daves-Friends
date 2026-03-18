@@ -46,9 +46,14 @@ class GameService:
         """
 
         lobby = self.lobby_service.get_lobby(channel_id)
-        lobby.game.draw_and_pass(user_id)
-        lobby.last_move = {"type": "draw", "player": user_id}
+        result = lobby.game.draw_and_pass(user_id)
+        lobby.last_move = {
+            "type": "draw",
+            "player": user_id,
+            "count": len(result.drawn),
+        }
         self.lobby_service.save()
+        return result
 
     def call_uno(self, channel_id: int, caller_id: int) -> dict[str, Any]:
         """

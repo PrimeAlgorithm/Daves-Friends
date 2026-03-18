@@ -3,6 +3,7 @@ Fuzzes some parts of the bot code using atheris.
 """
 
 #!/usr/bin/python3
+# pylint: disable=import-error
 
 import sys
 

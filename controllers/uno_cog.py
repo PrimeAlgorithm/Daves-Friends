@@ -9,8 +9,8 @@ from datetime import datetime, timedelta, timezone
 
 import discord
 from discord import app_commands
-from discord.ext import commands
 from discord.app_commands.errors import CommandInvokeError
+from discord.ext import commands
 
 from models.deck import Color
 from models.game_state import GameError, Phase
@@ -401,7 +401,14 @@ class UnoCog(commands.Cog):
             and game.state["turn_count"] == start_turn_count
         ):
             try:
-                self.game_service.draw(channel_id, player_id)
+                result = game.draw_and_pass(player_id)
+
+                # update last move
+                lobby.last_move = {
+                    "type": "draw",
+                    "player": player_id,
+                    "count": len(result.drawn),
+                }
 
                 # increment AFK count
                 game.state["afk_counts"][player_id] = (
@@ -412,16 +419,33 @@ class UnoCog(commands.Cog):
 
                 channel = self.bot.get_channel(channel_id)
                 if channel and afk_count <= 4:
-                    await channel.send(
-                        f" <@{player_id}> was AFK. They drew a card and was skipped."
-                    )
+                    if game.phase() == Phase.FINISHED and game.ended_in_draw():
+                        message = (
+                            f" <@{player_id}> was AFK. No cards were available to draw, "
+                            "so the game ended in a draw."
+                        )
+                    elif len(result.drawn) == 0:
+                        message = (
+                            f" <@{player_id}> was AFK. No cards were available to draw, "
+                            "and their turn was skipped."
+                        )
+                    elif len(result.drawn) == 1:
+                        message = (
+                            f" <@{player_id}> was AFK. They drew 1 card and were skipped."
+                        )
+                    else:
+                        message = (
+                            f" <@{player_id}> was AFK. They drew {len(result.drawn)} cards "
+                            "and were skipped."
+                        )
+                    await channel.send(message)
 
                     await self._renderer.update_by_message_id(
                         self.bot, channel_id, lobby.main_message, lobby
                     )
 
                 # auto kick if afk 5 times
-                if afk_count >= 5:
+                if afk_count >= 5 and game.phase() == Phase.PLAYING:
                     await self._kick_player(
                         lobby, player_id, afk=True, channel_id=channel_id
                     )
