@@ -45,6 +45,7 @@ class GameViews(BaseViews):
     The game view displaying the current game state.
     """
 
+    # pylint: disable=too-many-locals,too-many-branches
     def game_embed(self, lobby: Lobby) -> tuple[discord.Embed, discord.File | None]:
         """
         Creates an embed for the game, displaying the game creator, the current players, whose turn
@@ -77,9 +78,15 @@ class GameViews(BaseViews):
             move = lobby.last_move
 
             if isinstance(move, dict) and move.get("type") == "draw":
+                count = move.get("count", 1)
+                draw_text = "drew no cards"
+                if count == 1:
+                    draw_text = "drew 1 card"
+                elif count > 1:
+                    draw_text = f"drew {count} cards"
                 embed.add_field(
                     name="Last Move",
-                    value=f"{mention(move['player'])} drew a card",
+                    value=f"{mention(move['player'])} {draw_text}",
                     inline=False,
                 )
             else:
