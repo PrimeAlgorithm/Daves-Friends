@@ -9,17 +9,36 @@ from models import deck
 
 def test_smoke_imports():
     """
-    Smoke test: core modules should import without crashing.
+    Smoke test: modules and submodules should import without crashing.
     """
     modules = [
         "controllers",
+        "controllers.uno_cog",
         "models",
         "models.bot",
+        "models.deck",
+        "models.game_state",
+        "models.lobby_model",
         "services",
+        "services.game_service",
+        "services.lobby_service",
         "repos",
+        "repos.lobby_repo",
         "ui",
+        "ui.end_ui",
+        "ui.game_ui",
+        "ui.interactions",
+        "ui.lobby_ui",
         "utils",
+        "utils.card_image",
+        "utils.utils",
         "views",
+        "views.base_views",
+        "views.end_views",
+        "views.game_views",
+        "views.hand_views",
+        "views.lobby_views",
+        "views.renderer",
     ]
 
     for m in modules:
