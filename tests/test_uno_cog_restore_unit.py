@@ -2,6 +2,8 @@
 Tests startup restore behavior in the UNO cog.
 """
 
+# pylint: disable=protected-access
+
 from datetime import datetime, timezone
 from types import SimpleNamespace
 
@@ -18,7 +20,7 @@ def test_reset_restored_turn_timer_gives_player_new_afk_window():
     )
     lobby = SimpleNamespace(game=SimpleNamespace(state={"afk_deadline": None}))
 
-    UnoCog._reset_restored_turn_timer(fake_cog, lobby)  # pylint: disable=protected-access
+    UnoCog._reset_restored_turn_timer(fake_cog, lobby)
 
     assert lobby.game.state["afk_deadline"] > datetime.now(timezone.utc)
     assert save_calls == ["saved"]

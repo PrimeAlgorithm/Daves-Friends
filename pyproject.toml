@@ -17,4 +17,4 @@ packages = ["controllers", "models", "ui", "utils", "repos", "services", "tests"
 py-modules = ["__init__"]
 
 [tool.black]
-target-version = ["py313"]
+target-version = ["py310"]
