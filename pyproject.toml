@@ -7,8 +7,11 @@ dependencies = ["discord", "dotenv", "pytest"]
 [project.optional-dependencies]
 test = [
     "pytest",
-    "atheris",
     "black",
+    "pylint",
+]
+fuzz = [
+    "atheris",
 ]
 
 [tool.setuptools]

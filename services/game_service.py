@@ -44,7 +44,7 @@ class GameService:
         """
 
         lobby = self.lobby_service.get_lobby(channel_id)
-        lobby.game.draw_and_pass(user_id)
+        return lobby.game.draw_and_pass(user_id)
 
     def call_uno(self, channel_id: int, caller_id: int) -> dict[str, Any]:
         """

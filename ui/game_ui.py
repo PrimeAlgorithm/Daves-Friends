@@ -64,11 +64,23 @@ class GameUI(Interactions):
             case "penalty":
                 target = result["target"]
                 caller = result["caller"]
-                await interaction.followup.send(
-                    f"🚨 <@{target}> got caught by <@{caller}> "
-                    "and draws **+2** cards!",
-                    ephemeral=False,
-                )
+                drawn_count = result.get("drawn_count", 2)
+                if drawn_count == 0:
+                    message = (
+                        f"🚨 <@{target}> got caught by <@{caller}>, "
+                        "but there were no cards left to draw."
+                    )
+                elif drawn_count == 1:
+                    message = (
+                        f"🚨 <@{target}> got caught by <@{caller}> "
+                        "and draws **1** card!"
+                    )
+                else:
+                    message = (
+                        f"🚨 <@{target}> got caught by <@{caller}> "
+                        f"and draws **{drawn_count}** cards!"
+                    )
+                await interaction.followup.send(message, ephemeral=False)
             case "no_target":
                 await interaction.followup.send(
                     "No one is currently at UNO.", ephemeral=True
@@ -113,10 +125,14 @@ class GameUI(Interactions):
         """
 
         try:
-            self.game_service.draw(interaction.channel_id, interaction.user.id)
+            result = self.game_service.draw(interaction.channel_id, interaction.user.id)
 
             # record draw as last move so the embed can show it
-            self.lobby.last_move = {"type": "draw", "player": interaction.user.id}
+            self.lobby.last_move = {
+                "type": "draw",
+                "player": interaction.user.id,
+                "count": len(result.drawn),
+            }
 
         except GameError as e:
             embed = self._renderer.lobby_views.error_embed(

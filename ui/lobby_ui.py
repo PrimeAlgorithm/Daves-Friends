@@ -90,7 +90,7 @@ class LobbyUI(Interactions):
                 "Must be host",
                 "You must be the host in order to start the game!",
             )
-            await interaction.followup.send(embeds=[embed], ephemeral=True)
+            await interaction.response.send_message(embeds=[embed], ephemeral=True)
             return
 
         self.lobby_service.start_lobby(cid)

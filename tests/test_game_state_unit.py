@@ -7,7 +7,7 @@ import time
 import pytest
 
 from models.game_state import GameState, GameError, Phase
-from models.deck import Color, Number, Reverse, Skip, Wild
+from models.deck import Color, DrawTwo, Number, Reverse, Skip, Wild
 
 
 def test_start_game_requires_two_players():
@@ -186,6 +186,52 @@ def test_draw_adds_card():
     old_count = len(g.hand(2))
     g.draw_and_pass(2, 2)
     assert len(g.hand(2)) == old_count + 2
+
+
+def test_draw_with_empty_deck_advances_turn():
+    """
+    Drawing with no cards left should still pass the turn cleanly.
+    """
+    g = GameState()
+    g.add_player(1)
+    g.add_player(2)
+    g.start_game()
+
+    g.state["hands"][1] = [Number(Color.RED, 5)]
+    g.state["hands"][2] = [Number(Color.BLUE, 7)]
+    g.state["deck"] = []
+    g.state["discard"] = [Number(Color.RED, 1)]
+
+    result = g.draw_and_pass(1)
+
+    assert not result.drawn
+    assert len(g.hand(1)) == 1
+    assert result.next_player == 2
+    assert g.current_player() == 2
+    assert g.phase() == Phase.PLAYING
+    assert not g.ended_in_draw()
+
+
+def test_empty_deck_deadlock_ends_game_as_draw():
+    """
+    If nobody can play and there are no cards left to draw, the game ends in a draw.
+    """
+    g = GameState()
+    g.add_player(1)
+    g.add_player(2)
+    g.start_game()
+
+    g.state["hands"][1] = [Number(Color.BLUE, 5)]
+    g.state["hands"][2] = [Number(Color.GREEN, 7)]
+    g.state["deck"] = []
+    g.state["discard"] = [Number(Color.RED, 1)]
+
+    result = g.draw_and_pass(1)
+
+    assert not result.drawn
+    assert g.phase() == Phase.FINISHED
+    assert g.state["winner"] is None
+    assert g.ended_in_draw()
 
 
 def test_draw_wrong_turn():
@@ -528,6 +574,28 @@ def test_turn_count():
     assert g.turn_count() >= 1
 
 
+def test_draw_two_with_insufficient_cards_draws_available_cards():
+    """
+    Draw effects should use whatever cards remain without crashing.
+    """
+    g = GameState()
+    g.add_player(1)
+    g.add_player(2)
+    g.start_game()
+
+    g.state["hands"][1] = [DrawTwo(Color.RED), Number(Color.BLUE, 3)]
+    g.state["hands"][2] = [Number(Color.GREEN, 8)]
+    g.state["discard"] = [Number(Color.RED, 1)]
+    g.state["deck"] = []
+
+    result = g.play(1, 0)
+
+    assert result.drew_cards == {2: 1}
+    assert result.skipped is True
+    assert g.hand(2) == [Number(Color.GREEN, 8), Number(Color.RED, 1)]
+    assert g.current_player() == 1
+
+
 def _set_up_uno() -> GameState:
     """
     Sets up a new game with player 1 at Uno for calling UNo tests.
@@ -558,7 +626,37 @@ def test_call_uno_other():
     g = _set_up_uno()
     g.start_game()
 
-    assert g.call_uno(2) == {"result": "penalty", "caller": 2, "target": 1}
+    assert g.call_uno(2) == {
+        "result": "penalty",
+        "caller": 2,
+        "target": 1,
+        "drawn_count": 2,
+    }
+
+
+def test_call_uno_penalty_with_empty_deck():
+    """
+    Catching Uno should still resolve when no cards remain to draw.
+    """
+    g = GameState()
+    g.add_player(1)
+    g.add_player(2)
+    g.start_game()
+
+    old_count = len(g.hand(1))
+    g.state["uno_vulnerable"] = 1
+    g.state["uno_grace_until"] = 0.0
+    g.state["deck"] = []
+    g.state["discard"] = [Number(Color.RED, 1)]
+
+    assert g.call_uno(2) == {
+        "result": "penalty",
+        "caller": 2,
+        "target": 1,
+        "drawn_count": 0,
+    }
+    assert len(g.hand(1)) == old_count
+    assert g.uno_vulnerable() is None
 
 
 def test_call_uno_early():
