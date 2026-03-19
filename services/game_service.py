@@ -93,13 +93,12 @@ class GameService:
         """
         lobby = self.lobby_service.get_lobby(channel_id)
         phase = lobby.game.phase()
-    
+        
         if phase == Phase.LOBBY:
             lobby.game.remove_player(user_id)
         elif phase == Phase.PLAYING:
             lobby.game.kick_player(user_id)
         else:
             raise GameError("You can't leave a finished game.")
-    
         self.lobby_service.save()
         return phase
