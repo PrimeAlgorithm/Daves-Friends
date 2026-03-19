@@ -213,8 +213,19 @@ class UnoCog(commands.Cog):
         embed.add_field(
             name="How to Play",
             value=(
-                "On your turn, play a card that matches the current "
-                "color or number. If you cannot play, draw a card."
+                "On your turn, use `/play <card_index> <color>` to play a card from your "
+                "hand. `card_index` is the number shown in your hand view. `color` is only "
+                "needed for wild cards. You can play a card that matches the current color "
+                "or number. If you cannot play, draw a card."
+            ),
+            inline=False,
+        )
+
+        embed.add_field(
+            name="Calling UNO",
+            value=(
+                "When you are down to one card, you should call UNO. Make sure to follow "
+                "normal UNO gameplay rules during the match."
             ),
             inline=False,
         )
@@ -224,7 +235,7 @@ class UnoCog(commands.Cog):
             value=(
                 "`/create` — create a game lobby\n"
                 "`/join` — join a game\n"
-                "`/play` — play your turn\n"
+                "`/play` — play a card on your turn\n"
                 "`/leave` — leave the game\n"
                 "`/help` — view command help\n"
                 "`/tutorial` — show this tutorial"
