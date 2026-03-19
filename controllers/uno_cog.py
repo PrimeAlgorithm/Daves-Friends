@@ -212,7 +212,10 @@ class UnoCog(commands.Cog):
 
         embed.add_field(
             name="How to Play",
-            value="On your turn, play a card that matches the current color or number. If you cannot play, draw a card.",
+            value=(
+                "On your turn, play a card that matches the current " 
+                "color or number. If you cannot play, draw a card."
+            ),
             inline=False,
         )
 
