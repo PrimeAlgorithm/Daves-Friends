@@ -185,6 +185,59 @@ class UnoCog(commands.Cog):
         self.restart_solo_lobby_timer(lobby, reset_deadline=True)
 
     @app_commands.command(
+    name="tutorial",
+    description="Learn how to play UNO and use the bot.",
+    )
+    async def tutorial(self, interaction: discord.Interaction) -> None:
+        """
+        Sends a tutorial embed explaining how to use the UNO bot.
+        """
+        embed = discord.Embed(
+            title="UNO Bot Tutorial",
+            description="Learn how to start, play, and win a game of UNO using this bot.",
+            color=discord.Color.blue(),
+        )
+
+        embed.add_field(
+            name="Goal",
+            value="Be the first player to get rid of all your cards.",
+            inline=False,
+        )
+
+        embed.add_field(
+            name="How to Start",
+            value="Use `/create` to create a lobby and `/join` to join the game.",
+            inline=False,
+        )
+
+        embed.add_field(
+            name="How to Play",
+            value="On your turn, play a card that matches the current color or number. If you cannot play, draw a card.",
+            inline=False,
+        )
+
+        embed.add_field(
+            name="Useful Commands",
+            value=(
+                "`/create` — create a game lobby\n"
+                "`/join` — join a game\n"
+                "`/play` — play your turn\n"
+                "`/leave` — leave the game\n"
+                "`/help` — view command help\n"
+                "`/tutorial` — show this tutorial"
+            ),
+            inline=False,
+        )
+
+        embed.add_field(
+            name="How to Win",
+            value="The first player with no cards left wins the game.",
+            inline=False,
+        )
+
+        await interaction.response.send_message(embed=embed)
+
+    @app_commands.command(
         name="play",
         description="Play a card from your hand on your turn (index starts at 0).",
     )
