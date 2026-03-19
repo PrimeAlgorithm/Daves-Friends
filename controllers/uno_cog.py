@@ -305,7 +305,9 @@ class UnoCog(commands.Cog):
             f"{player.display_name} was kicked from the game.", ephemeral=True
         )
 
-    @app_commands.command(name="leave", description="Leave the current UNO game or lobby.")
+    @app_commands.command(
+        name="leave", description="Leave the current UNO game or lobby."
+    )
     async def leave(self, interaction: discord.Interaction) -> None:
         """
         Lets a player leave the game. Works in both LOBBY and PLAYING phases.
@@ -318,7 +320,9 @@ class UnoCog(commands.Cog):
             lobby = self.lobby_service.get_lobby(cid)
 
             if interaction.user.id not in lobby.game.players():
-                raise GameError("You are not in this game.", private=True, title="Not In Game")
+                raise GameError(
+                    "You are not in this game.", private=True, title="Not In Game"
+                )
 
             phase = self.game_service.leave_player(cid, interaction.user.id)
 
